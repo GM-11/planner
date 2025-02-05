@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "planner",
+    "slug": "planner",
+    "version": "1.0.0",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps._some_id_here_"
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "scheme": "myapp",
+    "android": {
+      "package": "com.gm_11.planner"
+    },
+    "ios": {
+      "bundleIdentifier": "com.gm-11.planner"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "1c047d56-be5d-4a8b-afe8-5abad834209d"
+      }
+    },
+    "owner": "gm_11"
+  }
+}
