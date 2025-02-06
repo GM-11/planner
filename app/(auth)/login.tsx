@@ -25,7 +25,7 @@ export default function Login() {
     try {
       setLoading(true);
       await signIn(email, password);
-      router.replace("/home");
+      router.replace("/(app)/tasks");
     } catch (error: any) {
       setLoading(false);
     }
@@ -35,7 +35,7 @@ export default function Login() {
     try {
       setLoading(true);
       await signInWithGoogle();
-      router.replace("/home");
+      router.replace("/(app)/tasks");
     } catch (error: any) {
       setLoading(false);
     }

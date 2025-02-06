@@ -17,5 +17,5 @@ export default function Index() {
     return <Redirect href="/login" />;
   }
 
-  return <Redirect href="/home" />;
+  return <Redirect href="/(app)/tasks" />;
 }

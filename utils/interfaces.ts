@@ -1,9 +1,10 @@
-interface Task {
-  id: string;
-  name: string;
+export interface Task {
+  id: number;
+  text: string;
+  startTime: string;
+  endTime: string;
   date: string;
-  time: string;
-  duration: string;
+  completed: boolean;
 }
 export interface User {
   id: string;

@@ -15,7 +15,7 @@ export default function AuthLayout() {
   }
 
   if (user) {
-    return <Redirect href="/home" />;
+    return <Redirect href="/(app)/tasks" />;
   }
 
   return (

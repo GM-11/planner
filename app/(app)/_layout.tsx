@@ -1,7 +1,8 @@
-import { Stack } from "expo-router";
+import { Tabs } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
 import { Redirect } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons"; // Make sure to install @expo/vector-icons
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
@@ -19,9 +20,40 @@ export default function AppLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="home" />
-      <Stack.Screen name="some" />
-    </Stack>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: "#0891b2",
+        tabBarInactiveTintColor: "gray",
+        headerShown: false,
+      }}
+    >
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: "Tasks",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="checkbox" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: "Calendar",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }
