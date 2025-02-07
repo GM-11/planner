@@ -1,6 +1,6 @@
 import { DateNavigator } from "@/components/DateNavigator";
 import { Task } from "@/utils/interfaces";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,11 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Keyboard,
+  Platform,
+  KeyboardAvoidingView,
+  Pressable,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Calendar as RNCalendar } from "react-native-calendars";
 import { Plus, ChevronDown } from "lucide-react-native";
@@ -21,10 +26,8 @@ import { useTaskContext } from "@/context/TaskContext";
 type ViewType = "daily" | "weekly" | "monthly";
 
 export default function Calendar() {
-  const { loadTasks, updateTasks, isLoading } = useTaskContext();
-
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewType, setViewType] = useState<ViewType>("weekly");
+  const [viewType, setViewType] = useState<ViewType>("daily");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [newTask, setNewTask] = useState("");
@@ -34,7 +37,23 @@ export default function Calendar() {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
 
+  const timeScrollRef = useRef<ScrollView>(null);
+  const { loadTasks, updateTasks, isLoading } = useTaskContext();
+
   const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+  useEffect(() => {
+    if (viewType === "daily" || viewType === "weekly") {
+      const scrollToCurrentTime = () => {
+        const now = new Date();
+        const hour = now.getHours();
+        const scrollPosition = hour * 80; // 80 is the height of each time slot
+        timeScrollRef.current?.scrollTo({ y: scrollPosition, animated: true });
+      };
+
+      setTimeout(scrollToCurrentTime, 100);
+    }
+  }, [viewType]);
 
   useEffect(() => {
     if (viewType === "weekly") {
@@ -168,78 +187,149 @@ export default function Calendar() {
     </ScrollView>
   );
 
-  const NewTaskModal = () => (
-    <Modal
-      visible={showNewTaskModal}
-      animationType="slide"
-      transparent
-      onRequestClose={() => setShowNewTaskModal(false)}
-    >
-      <View className="flex-1 justify-end">
-        <View className="bg-white rounded-t-xl shadow-lg">
-          <View className="p-4">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-semibold">New Task</Text>
-              <TouchableOpacity onPress={() => setShowNewTaskModal(false)}>
-                <Text className="text-blue-600">Cancel</Text>
-              </TouchableOpacity>
-            </View>
+  // const NewTaskModal = () => {
+  //   const handleTimeChange = (
+  //     selectedTime: Date | undefined,
+  //     type: "start" | "end",
+  //   ) => {
+  //     if (selectedTime) {
+  //       if (type === "start") {
+  //         setStartTime(selectedTime);
+  //       } else {
+  //         setEndTime(selectedTime);
+  //       }
+  //     }
+  //     if (Platform.OS === "android") {
+  //       setShowStartPicker(false);
+  //       setShowEndPicker(false);
+  //     }
+  //   };
 
-            <TextInput
-              className="border border-gray-200 p-3 rounded-lg mb-4"
-              placeholder="Task name"
-              value={newTask}
-              onChangeText={setNewTask}
-            />
+  //   return (
+  //     <Modal
+  //       visible={showNewTaskModal}
+  //       animationType="slide"
+  //       transparent
+  //       onRequestClose={() => setShowNewTaskModal(false)}
+  //     >
+  //       <View className="flex-1">
+  //         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+  //           <View className="flex-1 bg-black/50" />
+  //         </TouchableWithoutFeedback>
 
-            <View className="mb-4">
-              <Text className="text-gray-600 mb-2">Start Time</Text>
-              <TouchableOpacity
-                className="border border-gray-200 p-3 rounded-lg"
-                onPress={() => setShowStartPicker(true)}
-              >
-                <Text>{format(startTime, "HH:mm")}</Text>
-              </TouchableOpacity>
-            </View>
+  //         <View className="bg-white rounded-t-3xl">
+  //           <View className="p-4">
+  //             <View className="flex-row justify-between items-center mb-4">
+  //               <Text className="text-xl font-semibold">New Task</Text>
+  //               <TouchableOpacity
+  //                 onPress={() => {
+  //                   setShowNewTaskModal(false);
+  //                   resetForm();
+  //                 }}
+  //               >
+  //                 <Text className="text-blue-600">Cancel</Text>
+  //               </TouchableOpacity>
+  //             </View>
 
-            <View className="mb-4">
-              <Text className="text-gray-600 mb-2">End Time</Text>
-              <TouchableOpacity
-                className="border border-gray-200 p-3 rounded-lg"
-                onPress={() => setShowEndPicker(true)}
-              >
-                <Text>{format(endTime, "HH:mm")}</Text>
-              </TouchableOpacity>
-            </View>
+  //             <TextInput
+  //               className="border border-gray-200 p-3 rounded-lg mb-4"
+  //               placeholder="Task name"
+  //               value={newTask}
+  //               onChangeText={setNewTask}
+  //             />
 
-            {(showStartPicker || showEndPicker) && (
-              <DateTimePicker
-                value={showStartPicker ? startTime : endTime}
-                mode="time"
-                is24Hour={true}
-                onChange={(event: DateTimePickerEvent, date?: Date) => {
-                  if (date) {
-                    showStartPicker ? setStartTime(date) : setEndTime(date);
-                  }
-                  setShowStartPicker(false);
-                  setShowEndPicker(false);
-                }}
-              />
-            )}
+  //             <View className="mb-4">
+  //               <Text className="text-gray-600 mb-2">Start Time</Text>
+  //               <TouchableOpacity
+  //                 className="border border-gray-200 p-3 rounded-lg"
+  //                 onPress={() => setShowStartPicker(true)}
+  //               >
+  //                 <Text>{format(startTime, "HH:mm")}</Text>
+  //               </TouchableOpacity>
+  //             </View>
 
-            <TouchableOpacity
-              className="bg-blue-600 p-3 rounded-lg mt-4"
-              onPress={addTask}
-            >
-              <Text className="text-white text-center font-semibold">
-                Add Task
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
+  //             <View className="mb-4">
+  //               <Text className="text-gray-600 mb-2">End Time</Text>
+  //               <TouchableOpacity
+  //                 className="border border-gray-200 p-3 rounded-lg"
+  //                 onPress={() => setShowEndPicker(true)}
+  //               >
+  //                 <Text>{format(endTime, "HH:mm")}</Text>
+  //               </TouchableOpacity>
+  //             </View>
+
+  //             {Platform.OS === "ios" ? (
+  //               <>
+  //                 {showStartPicker && (
+  //                   <View className="border-t border-gray-200 pt-2">
+  //                     <DateTimePicker
+  //                       value={startTime}
+  //                       mode="time"
+  //                       is24Hour={true}
+  //                       display="spinner"
+  //                       onChange={(_, date) => handleTimeChange(date, "start")}
+  //                     />
+  //                     <TouchableOpacity
+  //                       onPress={() => setShowStartPicker(false)}
+  //                       className="bg-gray-100 p-2 rounded-lg"
+  //                     >
+  //                       <Text className="text-center text-blue-600">Done</Text>
+  //                     </TouchableOpacity>
+  //                   </View>
+  //                 )}
+  //                 {showEndPicker && (
+  //                   <View className="border-t border-gray-200 pt-2">
+  //                     <DateTimePicker
+  //                       value={endTime}
+  //                       mode="time"
+  //                       is24Hour={true}
+  //                       display="spinner"
+  //                       onChange={(_, date) => handleTimeChange(date, "end")}
+  //                     />
+  //                     <TouchableOpacity
+  //                       onPress={() => setShowEndPicker(false)}
+  //                       className="bg-gray-100 p-2 rounded-lg"
+  //                     >
+  //                       <Text className="text-center text-blue-600">Done</Text>
+  //                     </TouchableOpacity>
+  //                   </View>
+  //                 )}
+  //               </>
+  //             ) : (
+  //               <>
+  //                 {showStartPicker && (
+  //                   <DateTimePicker
+  //                     value={startTime}
+  //                     mode="time"
+  //                     is24Hour={true}
+  //                     onChange={(_, date) => handleTimeChange(date, "start")}
+  //                   />
+  //                 )}
+  //                 {showEndPicker && (
+  //                   <DateTimePicker
+  //                     value={endTime}
+  //                     mode="time"
+  //                     is24Hour={true}
+  //                     onChange={(_, date) => handleTimeChange(date, "end")}
+  //                   />
+  //                 )}
+  //               </>
+  //             )}
+
+  //             <TouchableOpacity
+  //               className="bg-blue-600 p-3 rounded-lg mt-4"
+  //               onPress={addTask}
+  //             >
+  //               <Text className="text-white text-center font-semibold">
+  //                 Add Task
+  //               </Text>
+  //             </TouchableOpacity>
+  //           </View>
+  //         </View>
+  //       </View>
+  //     </Modal>
+  //   );
+  // };
 
   const TimeSlot = ({ hour, date }: { hour: number; date: Date }) => {
     const slotTasks = getTimeSlotTasks(hour, date);
@@ -262,6 +352,17 @@ export default function Calendar() {
             <View
               key={task.id}
               className="absolute m-1 rounded p-2 left-0 right-0 bg-blue-500"
+              style={{
+                top: `${(parseInt(task.startTime.split(":")[1]) / 60) * 100}%`,
+                height: `${
+                  ((parseInt(task.endTime.split(":")[0]) * 60 +
+                    parseInt(task.endTime.split(":")[1]) -
+                    (parseInt(task.startTime.split(":")[0]) * 60 +
+                      parseInt(task.startTime.split(":")[1]))) /
+                    60) *
+                  100
+                }%`,
+              }}
             >
               <Text className="text-white font-medium">{task.text}</Text>
               <Text className="text-white text-xs">
@@ -277,15 +378,17 @@ export default function Calendar() {
   const WeekDayHeader = ({ date }: { date: Date }) => (
     <View className="flex-1 items-center p-2">
       <Text className="text-gray-500">{format(date, "EEE")}</Text>
-      <Text
-        className={`text-sm ${
-          format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
-            ? "text-blue-600 font-bold"
-            : ""
-        }`}
-      >
-        {format(date, "d")}
-      </Text>
+      <TouchableOpacity onPress={() => setSelectedDate(date)}>
+        <Text
+          className={`text-sm ${
+            format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
+              ? "text-blue-600 font-bold"
+              : ""
+          }`}
+        >
+          {format(date, "d")}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -397,14 +500,14 @@ export default function Calendar() {
       {viewType === "weekly" && renderWeeklyView()}
       {viewType === "monthly" && renderMonthlyView()}
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={() => setShowNewTaskModal(true)}
         className="absolute bottom-6 right-6 w-14 h-14 bg-blue-600 rounded-full items-center justify-center shadow-lg"
       >
         <Plus color="white" size={24} />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
-      <NewTaskModal />
+      {/* <NewTaskModal /> */}
     </View>
   );
 }
