@@ -215,7 +215,7 @@ export default function Tasks() {
         }}
       >
         <View className="flex-1 justify-end">
-          <View className="bg-white p-4 rounded-t-3xl">
+          <View className="bg-black/10 p-4 rounded-t-3xl ">
             <View className="flex-row justify-between items-center mb-4">
               <Text className="text-xl font-bold">Add New Task</Text>
               <TouchableOpacity
