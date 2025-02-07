@@ -7,17 +7,19 @@ import {
   ScrollView,
   Modal,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Task } from "@/utils/interfaces";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { DateNavigator } from "@/components/DateNavigator";
-import { taskService } from "@/utils/taskService";
+import { useTaskContext } from "@/context/TaskContext";
 
 export default function Tasks() {
+  const { loadTasks, updateTasks, isLoading } = useTaskContext();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -26,19 +28,22 @@ export default function Tasks() {
   const [endTime, setEndTime] = useState<Date>(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
 
   useEffect(() => {
-    loadTasks();
+    loadTasksForDate();
   }, [selectedDate]);
 
-  const loadTasks = async () => {
+  const loadTasksForDate = async () => {
+    setIsLocalLoading(true);
     try {
-      const loadedTasks = await taskService.fetchTasks(
-        format(selectedDate, "yyyy-MM-dd"),
-      );
+      const formattedDate = format(selectedDate, "yyyy-MM-dd");
+      const loadedTasks = await loadTasks(formattedDate);
       setTasks(loadedTasks);
     } catch (error) {
       console.error("Error loading tasks:", error);
+    } finally {
+      setIsLocalLoading(false);
     }
   };
 
@@ -54,44 +59,34 @@ export default function Tasks() {
       completed: false,
     };
 
-    const updatedTasks = [...tasks, newTaskItem];
-    setTasks(updatedTasks);
-
     try {
-      await taskService.saveTasks(updatedTasks, newTaskItem.date);
+      const updatedTasks = [...tasks, newTaskItem];
+      await updateTasks(updatedTasks, newTaskItem.date);
+      setTasks(updatedTasks);
+      setIsModalVisible(false);
+      resetForm();
     } catch (error) {
-      console.error("Error saving task:", error);
+      console.error("Error adding task:", error);
     }
-
-    setIsModalVisible(false);
-    resetForm();
   };
 
   const toggleTask = async (taskId: number): Promise<void> => {
-    const updatedTasks = tasks.map((task) =>
-      task.id === taskId ? { ...task, completed: !task.completed } : task,
-    );
-    setTasks(updatedTasks);
-
     try {
-      await taskService.saveTasks(
-        updatedTasks,
-        format(selectedDate, "yyyy-MM-dd"),
+      const updatedTasks = tasks.map((task) =>
+        task.id === taskId ? { ...task, completed: !task.completed } : task,
       );
+      await updateTasks(updatedTasks, format(selectedDate, "yyyy-MM-dd"));
+      setTasks(updatedTasks);
     } catch (error) {
-      console.error("Error updating task:", error);
+      console.error("Error toggling task:", error);
     }
   };
 
   const deleteTask = async (taskId: number): Promise<void> => {
-    const updatedTasks = tasks.filter((task) => task.id !== taskId);
-    setTasks(updatedTasks);
-
     try {
-      await taskService.saveTasks(
-        updatedTasks,
-        format(selectedDate, "yyyy-MM-dd"),
-      );
+      const updatedTasks = tasks.filter((task) => task.id !== taskId);
+      await updateTasks(updatedTasks, format(selectedDate, "yyyy-MM-dd"));
+      setTasks(updatedTasks);
     } catch (error) {
       console.error("Error deleting task:", error);
     }
@@ -104,6 +99,7 @@ export default function Tasks() {
     setShowStartPicker(false);
     setShowEndPicker(false);
   };
+
   const filteredAndSortedTasks = tasks
     .filter((task) => task.date === format(selectedDate, "yyyy-MM-dd"))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
@@ -127,78 +123,88 @@ export default function Tasks() {
     }
   };
 
+  const LoadingIndicator = () => (
+    <View className="flex-1 justify-center items-center">
+      <ActivityIndicator size="large" color="#4285f4" />
+    </View>
+  );
+
   return (
     <View className="flex-1 bg-white">
-      {/* Header with date navigation */}
       <DateNavigator
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
       />
-      {/* Tasks List */}
-      <ScrollView className="flex-1 px-4">
-        {filteredAndSortedTasks.length === 0 ? (
-          <Text className="text-gray-500 text-center mt-4">
-            No tasks for this day
-          </Text>
-        ) : (
-          filteredAndSortedTasks.map((task: Task) => (
-            <View
-              key={task.id}
-              className={`flex-row items-center justify-between p-4 mb-2 rounded-lg border border-gray-200 ${
-                task.completed ? "bg-gray-100" : "bg-white"
-              }`}
-            >
-              <TouchableOpacity
-                className="flex-1 flex-row items-center"
-                onPress={() => toggleTask(task.id)}
+
+      {isLocalLoading || isLoading ? (
+        <LoadingIndicator />
+      ) : (
+        <ScrollView className="flex-1 px-4">
+          {filteredAndSortedTasks.length === 0 ? (
+            <Text className="text-gray-500 text-center mt-4">
+              No tasks for this day
+            </Text>
+          ) : (
+            filteredAndSortedTasks.map((task: Task) => (
+              <View
+                key={task.id}
+                className={`flex-row items-center justify-between p-4 mb-2 rounded-lg border border-gray-200 ${
+                  task.completed ? "bg-gray-100" : "bg-white"
+                }`}
               >
-                <View
-                  className={`w-6 h-6 border-2 rounded-full mr-2 ${
-                    task.completed
-                      ? "bg-green-500 border-green-500"
-                      : "border-gray-300"
-                  }`}
+                <TouchableOpacity
+                  className="flex-1 flex-row items-center"
+                  onPress={() => toggleTask(task.id)}
+                  disabled={isLocalLoading}
                 >
-                  {task.completed && (
-                    <Ionicons name="checkmark" size={20} color="white" />
-                  )}
-                </View>
-                <View>
-                  <Text
-                    className={`font-semibold ${
+                  <View
+                    className={`w-6 h-6 border-2 rounded-full mr-2 ${
                       task.completed
-                        ? "text-gray-500 line-through"
-                        : "text-black"
+                        ? "bg-green-500 border-green-500"
+                        : "border-gray-300"
                     }`}
                   >
-                    {task.text}
-                  </Text>
-                  <Text className="text-gray-500 text-sm">
-                    {task.startTime} - {task.endTime}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                    {task.completed && (
+                      <Ionicons name="checkmark" size={20} color="white" />
+                    )}
+                  </View>
+                  <View>
+                    <Text
+                      className={`font-semibold ${
+                        task.completed
+                          ? "text-gray-500 line-through"
+                          : "text-black"
+                      }`}
+                    >
+                      {task.text}
+                    </Text>
+                    <Text className="text-gray-500 text-sm">
+                      {task.startTime} - {task.endTime}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                className="ml-4"
-                onPress={() => deleteTask(task.id)}
-              >
-                <Ionicons name="trash-outline" size={24} color="red" />
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-      </ScrollView>
+                <TouchableOpacity
+                  className="ml-4"
+                  onPress={() => deleteTask(task.id)}
+                  disabled={isLocalLoading}
+                >
+                  <Ionicons name="trash-outline" size={24} color="red" />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      )}
 
-      {/* FAB */}
       <TouchableOpacity
         className="absolute bottom-6 right-6 w-14 h-14 bg-blue-500 rounded-full items-center justify-center shadow-lg"
         onPress={() => setIsModalVisible(true)}
+        disabled={isLocalLoading}
       >
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
 
-      {/* Add Task Modal */}
       <Modal
         animationType="slide"
         transparent={true}

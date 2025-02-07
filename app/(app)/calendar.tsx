@@ -1,43 +1,119 @@
 import { DateNavigator } from "@/components/DateNavigator";
-import { useState } from "react";
+import { Task } from "@/utils/interfaces";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   Modal,
-  Pressable,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { Calendar as RNCalendar } from "react-native-calendars";
-import { Plus, ChevronDown, Clock, MapPin } from "lucide-react-native";
+import { Plus, ChevronDown } from "lucide-react-native";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import { useTaskContext } from "@/context/TaskContext";
 
 type ViewType = "daily" | "weekly" | "monthly";
-type EventType = "event" | "task";
-
-interface Event {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  type: EventType;
-  location?: string;
-  description?: string;
-  color?: string;
-}
 
 export default function Calendar() {
+  const { loadTasks, updateTasks, isLoading } = useTaskContext();
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewType, setViewType] = useState<ViewType>("weekly");
-  const [events, setEvents] = useState<Event[]>([]);
-  const [showNewEventModal, setShowNewEventModal] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
-    start: Date;
-    end: Date;
-  } | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [newTask, setNewTask] = useState("");
+  const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
 
   const HOURS = Array.from({ length: 24 }, (_, i) => i);
-  const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  useEffect(() => {
+    if (viewType === "weekly") {
+      loadWeekTasks();
+    } else {
+      loadTasksForDate();
+    }
+  }, [selectedDate, viewType]);
+
+  const loadTasksForDate = async () => {
+    setIsLocalLoading(true);
+    try {
+      const formattedDate = format(selectedDate, "yyyy-MM-dd");
+      const loadedTasks = await loadTasks(formattedDate);
+      setTasks(loadedTasks);
+    } catch (error) {
+      console.error("Error loading tasks:", error);
+    } finally {
+      setIsLocalLoading(false);
+    }
+  };
+
+  const loadWeekTasks = async () => {
+    setIsLocalLoading(true);
+    try {
+      const start = startOfWeek(selectedDate);
+      const end = endOfWeek(selectedDate);
+      const dates = eachDayOfInterval({ start, end });
+
+      const weekTasks = await Promise.all(
+        dates.map((date) => loadTasks(format(date, "yyyy-MM-dd"))),
+      );
+      setTasks(weekTasks.flat());
+    } catch (error) {
+      console.error("Error loading week tasks:", error);
+    } finally {
+      setIsLocalLoading(false);
+    }
+  };
+
+  const addTask = async () => {
+    if (newTask.trim() === "") return;
+
+    const newTaskItem: Task = {
+      id: Date.now(),
+      text: newTask,
+      startTime: format(startTime, "HH:mm"),
+      endTime: format(endTime, "HH:mm"),
+      date: format(selectedDate, "yyyy-MM-dd"),
+      completed: false,
+    };
+
+    try {
+      const updatedTasks = [...tasks, newTaskItem];
+      await updateTasks(updatedTasks, newTaskItem.date);
+      setTasks(updatedTasks);
+      setShowNewTaskModal(false);
+      resetForm();
+    } catch (error) {
+      console.error("Error adding task:", error);
+    }
+  };
+
+  const getTimeSlotTasks = (hour: number, date: Date) => {
+    return tasks.filter((task) => {
+      const taskDate = format(new Date(task.date), "yyyy-MM-dd");
+      const currentDate = format(date, "yyyy-MM-dd");
+      const taskStartHour = parseInt(task.startTime.split(":")[0]);
+      return taskDate === currentDate && taskStartHour === hour;
+    });
+  };
+
+  const resetForm = () => {
+    setNewTask("");
+    setStartTime(new Date());
+    setEndTime(new Date());
+    setShowStartPicker(false);
+    setShowEndPicker(false);
+  };
 
   const ViewSelector = () => (
     <View className="flex-row items-center px-4 py-2 border-b border-gray-200">
@@ -72,168 +148,245 @@ export default function Calendar() {
     </View>
   );
 
-  const TimeSlot = ({ hour, events }: { hour: number; events: Event[] }) => (
-    <Pressable
-      onPress={() => {
-        const start = new Date(selectedDate);
-        start.setHours(hour, 0, 0);
-        const end = new Date(start);
-        end.setHours(hour + 1, 0, 0);
-        setSelectedTimeSlot({ start, end });
-        setShowNewEventModal(true);
-      }}
-      className="flex-row h-20 border-t border-gray-100"
-    >
-      <View className="w-16 py-2">
-        <Text className="text-gray-500 text-right pr-2">
-          {hour === 0
-            ? "12 AM"
-            : hour < 12
-              ? `${hour} AM`
-              : hour === 12
-                ? "12 PM"
-                : `${hour - 12} PM`}
-        </Text>
-      </View>
-      <View className="flex-1 border-l border-gray-200">
-        {events.map((event) => (
+  const TaskList = () => (
+    <ScrollView className="p-4">
+      {tasks.length === 0 ? (
+        <Text className="text-gray-500 text-center">No tasks for this day</Text>
+      ) : (
+        tasks.map((task) => (
           <View
-            key={event.id}
-            style={{ backgroundColor: event.color || "#4285f4" }}
-            className="absolute m-1 rounded p-2 left-0 right-0"
+            key={task.id}
+            className="p-4 mb-2 bg-white rounded-lg border border-gray-200"
           >
-            <Text className="text-white font-medium">{event.title}</Text>
-            {event.location && (
-              <View className="flex-row items-center mt-1">
-                <MapPin size={12} color="white" />
-                <Text className="text-white text-xs ml-1">
-                  {event.location}
-                </Text>
-              </View>
-            )}
+            <Text className="font-semibold">{task.text}</Text>
+            <Text className="text-gray-500 text-sm">
+              {task.startTime} - {task.endTime}
+            </Text>
           </View>
-        ))}
-      </View>
-    </Pressable>
+        ))
+      )}
+    </ScrollView>
   );
 
-  const NewEventModal = () => (
+  const NewTaskModal = () => (
     <Modal
-      visible={showNewEventModal}
+      visible={showNewTaskModal}
       animationType="slide"
       transparent
-      onRequestClose={() => setShowNewEventModal(false)}
+      onRequestClose={() => setShowNewTaskModal(false)}
     >
       <View className="flex-1 justify-end">
         <View className="bg-white rounded-t-xl shadow-lg">
-          <View className="p-4 border-b border-gray-200">
-            <View className="flex-row justify-between items-center">
-              <Text className="text-xl font-semibold">New event</Text>
-              <TouchableOpacity
-                onPress={() => setShowNewEventModal(false)}
-                className="p-2"
-              >
+          <View className="p-4">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-semibold">New Task</Text>
+              <TouchableOpacity onPress={() => setShowNewTaskModal(false)}>
                 <Text className="text-blue-600">Cancel</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Event Form */}
-            <View className="space-y-4 mt-4">
-              <View className="border-b border-gray-200 pb-2">
-                <TextInput
-                  placeholder="Add title"
-                  className="text-lg"
-                  placeholderTextColor="#666"
-                />
-              </View>
+            <TextInput
+              className="border border-gray-200 p-3 rounded-lg mb-4"
+              placeholder="Task name"
+              value={newTask}
+              onChangeText={setNewTask}
+            />
 
-              <View className="flex-row items-center space-x-2">
-                <Clock size={20} color="#666" />
-                <Text>
-                  {selectedTimeSlot?.start.toLocaleTimeString()} -{" "}
-                  {selectedTimeSlot?.end.toLocaleTimeString()}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center space-x-2">
-                <MapPin size={20} color="#666" />
-                <TextInput
-                  placeholder="Add location"
-                  className="flex-1"
-                  placeholderTextColor="#666"
-                />
-              </View>
-
+            <View className="mb-4">
+              <Text className="text-gray-600 mb-2">Start Time</Text>
               <TouchableOpacity
-                className="bg-blue-600 p-3 rounded-lg mt-4"
-                onPress={() => {
-                  // Handle event creation
-                  setShowNewEventModal(false);
-                }}
+                className="border border-gray-200 p-3 rounded-lg"
+                onPress={() => setShowStartPicker(true)}
               >
-                <Text className="text-white text-center font-medium">Save</Text>
+                <Text>{format(startTime, "HH:mm")}</Text>
               </TouchableOpacity>
             </View>
+
+            <View className="mb-4">
+              <Text className="text-gray-600 mb-2">End Time</Text>
+              <TouchableOpacity
+                className="border border-gray-200 p-3 rounded-lg"
+                onPress={() => setShowEndPicker(true)}
+              >
+                <Text>{format(endTime, "HH:mm")}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {(showStartPicker || showEndPicker) && (
+              <DateTimePicker
+                value={showStartPicker ? startTime : endTime}
+                mode="time"
+                is24Hour={true}
+                onChange={(event: DateTimePickerEvent, date?: Date) => {
+                  if (date) {
+                    showStartPicker ? setStartTime(date) : setEndTime(date);
+                  }
+                  setShowStartPicker(false);
+                  setShowEndPicker(false);
+                }}
+              />
+            )}
+
+            <TouchableOpacity
+              className="bg-blue-600 p-3 rounded-lg mt-4"
+              onPress={addTask}
+            >
+              <Text className="text-white text-center font-semibold">
+                Add Task
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
     </Modal>
   );
 
-  const renderDailyView = () => (
-    <ScrollView>
-      {HOURS.map((hour) => (
-        <TimeSlot
-          key={hour}
-          hour={hour}
-          events={events.filter((event) => {
-            const eventHour = event.start.getHours();
-            return (
-              eventHour === hour &&
-              event.start.toDateString() === selectedDate.toDateString()
-            );
-          })}
-        />
-      ))}
-    </ScrollView>
-  );
+  const TimeSlot = ({ hour, date }: { hour: number; date: Date }) => {
+    const slotTasks = getTimeSlotTasks(hour, date);
 
-  const renderWeeklyView = () => (
-    <View className="flex-1">
-      <View className="flex-row border-b border-gray-200">
-        <View className="w-16" /> {/* Time column spacer */}
-        {DAYS_OF_WEEK.map((day) => (
-          <View key={day} className="flex-1 p-2 items-center">
-            <Text className="text-gray-500">{day}</Text>
-          </View>
-        ))}
+    return (
+      <View className="flex-row h-20 border-t border-gray-100">
+        <View className="w-16 py-2">
+          <Text className="text-gray-500 text-right pr-2">
+            {hour === 0
+              ? "12 AM"
+              : hour < 12
+                ? `${hour} AM`
+                : hour === 12
+                  ? "12 PM"
+                  : `${hour - 12} PM`}
+          </Text>
+        </View>
+        <View className="flex-1 border-l border-gray-200">
+          {slotTasks.map((task) => (
+            <View
+              key={task.id}
+              className="absolute m-1 rounded p-2 left-0 right-0 bg-blue-500"
+            >
+              <Text className="text-white font-medium">{task.text}</Text>
+              <Text className="text-white text-xs">
+                {task.startTime} - {task.endTime}
+              </Text>
+            </View>
+          ))}
+        </View>
       </View>
-      <ScrollView>
-        {HOURS.map((hour) => (
-          <TimeSlot
-            key={hour}
-            hour={hour}
-            events={events.filter((event) => event.start.getHours() === hour)}
-          />
-        ))}
-      </ScrollView>
+    );
+  };
+
+  const WeekDayHeader = ({ date }: { date: Date }) => (
+    <View className="flex-1 items-center p-2">
+      <Text className="text-gray-500">{format(date, "EEE")}</Text>
+      <Text
+        className={`text-sm ${
+          format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
+            ? "text-blue-600 font-bold"
+            : ""
+        }`}
+      >
+        {format(date, "d")}
+      </Text>
     </View>
   );
 
+  const renderDailyView = () => (
+    <View className="flex-1">
+      <DateNavigator
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+      />
+      {isLocalLoading || isLoading ? (
+        <LoadingIndicator />
+      ) : (
+        <ScrollView>
+          {HOURS.map((hour) => (
+            <TimeSlot key={hour} hour={hour} date={selectedDate} />
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
+
+  const renderWeeklyView = () => {
+    const weekDates = eachDayOfInterval({
+      start: startOfWeek(selectedDate),
+      end: endOfWeek(selectedDate),
+    });
+
+    return (
+      <View className="flex-1">
+        <View className="flex-row border-b border-gray-200">
+          <View className="w-16" />
+          {weekDates.map((date) => (
+            <WeekDayHeader key={date.toISOString()} date={date} />
+          ))}
+        </View>
+        {isLocalLoading || isLoading ? (
+          <LoadingIndicator />
+        ) : (
+          <ScrollView>
+            {HOURS.map((hour) => (
+              <View
+                key={hour}
+                className="flex-row h-20 border-t border-gray-100"
+              >
+                <View className="w-16 py-2">
+                  <Text className="text-gray-500 text-right pr-2">
+                    {hour === 0
+                      ? "12 AM"
+                      : hour < 12
+                        ? `${hour} AM`
+                        : hour === 12
+                          ? "12 PM"
+                          : `${hour - 12} PM`}
+                  </Text>
+                </View>
+                {weekDates.map((date) => (
+                  <View
+                    key={date.toISOString()}
+                    className="flex-1 border-l border-gray-200"
+                  >
+                    {getTimeSlotTasks(hour, date).map((task) => (
+                      <View
+                        key={task.id}
+                        className="absolute m-1 rounded p-2 left-0 right-0 bg-blue-500"
+                      >
+                        <Text className="text-white font-medium text-xs">
+                          {task.text}
+                        </Text>
+                        <Text className="text-white text-xs">
+                          {task.startTime}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    );
+  };
+
   const renderMonthlyView = () => (
-    <RNCalendar
-      onDayPress={(day) => {
-        setSelectedDate(new Date(day.timestamp));
-        setViewType("daily");
-      }}
-      markedDates={events.reduce((acc, event) => {
-        const dateStr = event.start.toISOString().split("T")[0];
-        return {
-          ...acc,
-          [dateStr]: { marked: true, dotColor: event.color || "#4285f4" },
-        };
-      }, {})}
-    />
+    <View className="flex-1">
+      <RNCalendar
+        onDayPress={(day) => {
+          setSelectedDate(new Date(day.timestamp));
+        }}
+        markedDates={{
+          [format(selectedDate, "yyyy-MM-dd")]: { selected: true },
+        }}
+      />
+      {isLocalLoading || isLoading ? <LoadingIndicator /> : <TaskList />}
+    </View>
+  );
+
+  const LoadingIndicator = () => (
+    <View className="flex-1 justify-center items-center">
+      <ActivityIndicator size="large" color="#4285f4" />
+    </View>
   );
 
   return (
@@ -245,13 +398,13 @@ export default function Calendar() {
       {viewType === "monthly" && renderMonthlyView()}
 
       <TouchableOpacity
-        onPress={() => setShowNewEventModal(true)}
+        onPress={() => setShowNewTaskModal(true)}
         className="absolute bottom-6 right-6 w-14 h-14 bg-blue-600 rounded-full items-center justify-center shadow-lg"
       >
         <Plus color="white" size={24} />
       </TouchableOpacity>
 
-      <NewEventModal />
+      <NewTaskModal />
     </View>
   );
 }
