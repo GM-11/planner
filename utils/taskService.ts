@@ -33,12 +33,10 @@ export const taskService = {
   },
 
   // Save tasks for a specific date
-  async saveTasks(tasks: Task[], date: string) {
+  async saveTasks(tasks: Task[], date: string, userId: string) {
     const compressed = this.compressTasks(tasks);
-    const userId = (await supabase.auth.getUser()).data.user?.id;
 
     if (tasks.length === 0) {
-      // If there are no tasks, delete the record for this date
       const { error } = await supabase
         .from("tasks")
         .delete()
@@ -47,7 +45,6 @@ export const taskService = {
 
       if (error) throw error;
     } else {
-      // If there are tasks, upsert them
       const { error } = await supabase.from("tasks").upsert(
         {
           user_id: userId,
@@ -65,17 +62,16 @@ export const taskService = {
   },
 
   // Fetch tasks for a specific date
-  async fetchTasks(date: string): Promise<Task[]> {
+  async fetchTasks(date: string, userId: string): Promise<Task[]> {
     const { data, error } = await supabase
       .from("tasks")
       .select("data")
-      .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+      .eq("user_id", userId)
       .eq("date", format(new Date(date), "yyyy-MM-dd"))
-      .maybeSingle(); // Use maybeSingle() instead of single()
+      .maybeSingle();
 
     if (error) throw error;
 
-    // If no data exists for this date, return empty array
     return data ? this.decompressTasks(data.data, date) : [];
   },
 };
