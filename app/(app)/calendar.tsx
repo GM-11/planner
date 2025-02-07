@@ -427,7 +427,7 @@ export default function Calendar() {
         {isLocalLoading || isLoading ? (
           <LoadingIndicator />
         ) : (
-          <ScrollView>
+          <ScrollView ref={timeScrollRef}>
             {HOURS.map((hour) => (
               <View
                 key={hour}
@@ -453,12 +453,23 @@ export default function Calendar() {
                       <View
                         key={task.id}
                         className="absolute m-1 rounded p-2 left-0 right-0 bg-blue-500"
+                        style={{
+                          top: `${(parseInt(task.startTime.split(":")[1]) / 60) * 100}%`,
+                          height: `${
+                            ((parseInt(task.endTime.split(":")[0]) * 60 +
+                              parseInt(task.endTime.split(":")[1]) -
+                              (parseInt(task.startTime.split(":")[0]) * 60 +
+                                parseInt(task.startTime.split(":")[1]))) /
+                              60) *
+                            100
+                          }%`,
+                        }}
                       >
                         <Text className="text-white font-medium text-xs">
                           {task.text}
                         </Text>
                         <Text className="text-white text-xs">
-                          {task.startTime}
+                          {task.startTime} - {task.endTime}
                         </Text>
                       </View>
                     ))}
@@ -474,15 +485,39 @@ export default function Calendar() {
 
   const renderMonthlyView = () => (
     <View className="flex-1">
-      <RNCalendar
-        onDayPress={(day) => {
-          setSelectedDate(new Date(day.timestamp));
-        }}
-        markedDates={{
-          [format(selectedDate, "yyyy-MM-dd")]: { selected: true },
-        }}
-      />
-      {isLocalLoading || isLoading ? <LoadingIndicator /> : <TaskList />}
+      {/* Use flexRow only for web view */}
+      <View className="flex-1 md:flex-row">
+        {/* Tasks Section - Hidden on mobile, shown on left for web */}
+        <View className="hidden md:flex md:w-1/3 md:border-r md:border-gray-200">
+          {isLocalLoading || isLoading ? (
+            <LoadingIndicator />
+          ) : (
+            <ScrollView className="p-4">
+              <Text className="text-lg font-semibold mb-4">
+                Tasks for {format(selectedDate, "MMMM d, yyyy")}
+              </Text>
+              <TaskList />
+            </ScrollView>
+          )}
+        </View>
+
+        {/* Calendar Section */}
+        <View className="flex-1">
+          <RNCalendar
+            onDayPress={(day) => {
+              setSelectedDate(new Date(day.timestamp));
+            }}
+            markedDates={{
+              [format(selectedDate, "yyyy-MM-dd")]: { selected: true },
+            }}
+          />
+
+          {/* Mobile Tasks Section - Hidden on web */}
+          <View className="md:hidden flex-1">
+            {isLocalLoading || isLoading ? <LoadingIndicator /> : <TaskList />}
+          </View>
+        </View>
+      </View>
     </View>
   );
 
