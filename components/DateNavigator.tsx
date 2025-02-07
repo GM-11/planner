@@ -27,9 +27,12 @@ export function DateNavigator({
       >
         <Ionicons name="chevron-back" size={24} color="black" />
       </TouchableOpacity>
-      <Text className="text-xl font-bold">
-        {format(selectedDate, "MMMM d, yyyy")}
-      </Text>
+      <View className="items-center">
+        <Text className="text-xl font-bold">
+          {format(selectedDate, "MMMM d, yyyy")}
+        </Text>
+        <Text className="text-sm">{format(selectedDate, "EEEE")}</Text>
+      </View>
       <TouchableOpacity
         onPress={() => handleDateChange("next")}
         className="p-2"
