@@ -9,12 +9,15 @@ import {
 } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import { Link, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const { signIn } = useAuth();
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -25,16 +28,6 @@ export default function Login() {
     try {
       setLoading(true);
       await signIn(email, password);
-      router.replace("/(app)/tasks");
-    } catch (error: any) {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      await signInWithGoogle();
       router.replace("/(app)/tasks");
     } catch (error: any) {
       setLoading(false);
@@ -58,13 +51,25 @@ export default function Login() {
             className="p-4 bg-gray-50 rounded-lg border border-gray-200"
           />
 
-          <TextInput
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-          />
+          <View className="relative">
+            <TextInput
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-4"
+            >
+              <Ionicons
+                name={showPassword ? "eye-off" : "eye"}
+                size={24}
+                color="gray"
+              />
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             onPress={handleSignIn}
@@ -78,16 +83,6 @@ export default function Login() {
                 Sign In
               </Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleGoogleSignIn}
-            disabled={loading}
-            className="bg-white p-4 rounded-lg border border-gray-200 flex-row justify-center items-center"
-          >
-            <Text className="text-gray-700 text-center font-semibold">
-              Sign in with Google
-            </Text>
           </TouchableOpacity>
         </View>
 

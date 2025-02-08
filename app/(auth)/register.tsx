@@ -9,12 +9,15 @@ import {
 } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import { Link, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const { signUp } = useAuth();
 
   const handleSignUp = async () => {
@@ -59,21 +62,45 @@ export default function Register() {
             className="p-4 bg-gray-50 rounded-lg border border-gray-200"
           />
 
-          <TextInput
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-          />
+          <View className="relative">
+            <TextInput
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-4"
+            >
+              <Ionicons
+                name={showPassword ? "eye-off" : "eye"}
+                size={24}
+                color="gray"
+              />
+            </TouchableOpacity>
+          </View>
 
-          <TextInput
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-          />
+          <View className="relative">
+            <TextInput
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showPassword}
+              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-4"
+            >
+              <Ionicons
+                name={showPassword ? "eye-off" : "eye"}
+                size={24}
+                color="gray"
+              />
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             onPress={handleSignUp}
