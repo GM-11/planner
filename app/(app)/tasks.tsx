@@ -18,6 +18,78 @@ import { format } from "date-fns";
 import { DateNavigator } from "@/components/DateNavigator";
 import { useTaskContext } from "@/context/TaskContext";
 
+const TimeInput = ({
+  value,
+  onChange,
+  label,
+  setShowStartPicker,
+  setShowEndPicker,
+}: {
+  value: Date;
+  onChange: (date: Date) => void;
+  label: string;
+  setShowStartPicker?: (show: boolean) => void;
+  setShowEndPicker?: (show: boolean) => void;
+}) => {
+  // Format time for display and input
+  const timeString = format(value, "HH:mm");
+  const [inputValue, setInputValue] = useState(timeString);
+
+  // Update input value when the date prop changes
+  useEffect(() => {
+    setInputValue(format(value, "HH:mm"));
+  }, [value]);
+
+  if (Platform.OS === "web") {
+    return (
+      <View className="mb-4">
+        <Text className="text-sm text-gray-600 mb-2">{label}</Text>
+        <input
+          type="time"
+          className="border border-gray-300 p-3 rounded-lg w-full"
+          value={inputValue}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            setInputValue(newValue);
+
+            if (newValue) {
+              const [hours, minutes] = newValue.split(":");
+              const newDate = new Date(value);
+              newDate.setHours(parseInt(hours, 10));
+              newDate.setMinutes(parseInt(minutes, 10));
+              onChange(newDate);
+            }
+          }}
+          style={{
+            height: 48,
+            fontSize: 16,
+            outline: "none",
+            cursor: "pointer",
+          }}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View className="mb-4">
+      <Text className="text-sm text-gray-600 mb-2">{label}</Text>
+      <TouchableOpacity
+        className="border border-gray-300 p-3 rounded-lg"
+        onPress={() => {
+          if (label === "Start Time" && setShowStartPicker) {
+            setShowStartPicker(true);
+          } else if (label === "End Time" && setShowEndPicker) {
+            setShowEndPicker(true);
+          }
+        }}
+      >
+        <Text>{timeString}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 export default function Tasks() {
   const { loadTasks, updateTasks, isLoading } = useTaskContext();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -215,7 +287,7 @@ export default function Tasks() {
         }}
       >
         <View className="flex-1 justify-end">
-          <View className="bg-black/10 p-4 rounded-t-3xl ">
+          <View className="bg-white p-4 rounded-t-3xl">
             <View className="flex-row justify-between items-center mb-4">
               <Text className="text-xl font-bold">Add New Task</Text>
               <TouchableOpacity
@@ -235,58 +307,70 @@ export default function Tasks() {
               onChangeText={setNewTask}
             />
 
-            <View className="mb-4">
-              <Text className="text-sm text-gray-600 mb-2">Start Time</Text>
-              <TouchableOpacity
-                className="border border-gray-300 p-3 rounded-lg"
-                onPress={() => setShowStartPicker(true)}
-              >
-                <Text>{format(startTime, "HH:mm")}</Text>
-              </TouchableOpacity>
-            </View>
+            <TimeInput
+              value={startTime}
+              onChange={(date) => {
+                setStartTime(date);
+                setShowStartPicker(false);
+              }}
+              label="Start Time"
+              setShowStartPicker={setShowStartPicker}
+              setShowEndPicker={setShowEndPicker}
+            />
 
-            <View className="mb-4">
-              <Text className="text-sm text-gray-600 mb-2">End Time</Text>
-              <TouchableOpacity
-                className="border border-gray-300 p-3 rounded-lg"
-                onPress={() => setShowEndPicker(true)}
-              >
-                <Text>{format(endTime, "HH:mm")}</Text>
-              </TouchableOpacity>
-            </View>
+            <TimeInput
+              value={endTime}
+              onChange={(date) => {
+                setEndTime(date);
+                setShowEndPicker(false);
+              }}
+              label="End Time"
+              setShowStartPicker={setShowStartPicker}
+              setShowEndPicker={setShowEndPicker}
+            />
 
-            {Platform.OS === "android" ? (
-              (showStartPicker || showEndPicker) && (
-                <DateTimePicker
-                  value={showStartPicker ? startTime : endTime}
-                  mode="time"
-                  is24Hour={true}
-                  onChange={(event, date) =>
-                    onTimeChange(event, date, showStartPicker ? "start" : "end")
-                  }
-                />
-              )
-            ) : (
+            {Platform.OS !== "web" && (
               <>
-                {showStartPicker && (
-                  <DateTimePicker
-                    value={startTime}
-                    mode="time"
-                    is24Hour={true}
-                    onChange={(event, date) =>
-                      onTimeChange(event, date, "start")
-                    }
-                    style={{ width: 100 }}
-                  />
-                )}
-                {showEndPicker && (
-                  <DateTimePicker
-                    value={endTime}
-                    mode="time"
-                    is24Hour={true}
-                    onChange={(event, date) => onTimeChange(event, date, "end")}
-                    style={{ width: 100 }}
-                  />
+                {Platform.OS === "android" ? (
+                  (showStartPicker || showEndPicker) && (
+                    <DateTimePicker
+                      value={showStartPicker ? startTime : endTime}
+                      mode="time"
+                      is24Hour={true}
+                      onChange={(event, date) =>
+                        onTimeChange(
+                          event,
+                          date,
+                          showStartPicker ? "start" : "end",
+                        )
+                      }
+                    />
+                  )
+                ) : (
+                  <>
+                    {showStartPicker && (
+                      <DateTimePicker
+                        value={startTime}
+                        mode="time"
+                        is24Hour={true}
+                        onChange={(event, date) =>
+                          onTimeChange(event, date, "start")
+                        }
+                        style={{ width: 100 }}
+                      />
+                    )}
+                    {showEndPicker && (
+                      <DateTimePicker
+                        value={endTime}
+                        mode="time"
+                        is24Hour={true}
+                        onChange={(event, date) =>
+                          onTimeChange(event, date, "end")
+                        }
+                        style={{ width: 100 }}
+                      />
+                    )}
+                  </>
                 )}
               </>
             )}
