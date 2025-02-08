@@ -105,6 +105,7 @@ export default function Calendar() {
       endTime: format(endTime, "HH:mm"),
       date: format(selectedDate, "yyyy-MM-dd"),
       completed: false,
+      importance: "mildly-important",
     };
 
     try {

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Task } from "@/utils/interfaces";
+import Slider from "@react-native-community/slider";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
@@ -101,10 +102,33 @@ export default function Tasks() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
+  const [importance, setImportance] = useState<Task["importance"]>("important");
 
   useEffect(() => {
     loadTasksForDate();
   }, [selectedDate]);
+
+  const getImportanceLevel = (value: number): Task["importance"] => {
+    if (value <= 0.25) return "less-important";
+    if (value <= 0.5) return "mildly-important";
+    if (value <= 0.75) return "important";
+    return "very-important";
+  };
+
+  const getImportanceColor = (importance: Task["importance"]): string => {
+    switch (importance) {
+      case "very-important":
+        return "#ef4444";
+      case "important":
+        return "#f97316";
+      case "mildly-important":
+        return "#eab308";
+      case "less-important":
+        return "#22c55e";
+      default:
+        return "#gray-500";
+    }
+  };
 
   const loadTasksForDate = async () => {
     setIsLocalLoading(true);
@@ -129,6 +153,7 @@ export default function Tasks() {
       endTime: format(endTime, "HH:mm"),
       date: format(selectedDate, "yyyy-MM-dd"),
       completed: false,
+      importance,
     };
 
     try {
@@ -170,6 +195,7 @@ export default function Tasks() {
     setEndTime(new Date());
     setShowStartPicker(false);
     setShowEndPicker(false);
+    setImportance("important"); // Reset importance
   };
 
   const filteredAndSortedTasks = tasks
@@ -223,6 +249,7 @@ export default function Tasks() {
                 className={`flex-row items-center justify-between p-4 mb-2 rounded-lg border border-gray-200 ${
                   task.completed ? "bg-gray-100" : "bg-white"
                 }`}
+                style={{ borderColor: getImportanceColor(task.importance) }}
               >
                 <TouchableOpacity
                   className="flex-1 flex-row items-center"
@@ -374,6 +401,39 @@ export default function Tasks() {
                 )}
               </>
             )}
+
+            <View className="mb-4">
+              <Text className="text-sm text-gray-600 mb-2">
+                Importance Level
+              </Text>
+              <View className="px-2">
+                <Slider
+                  minimumValue={0}
+                  maximumValue={1}
+                  step={0.25}
+                  value={
+                    [
+                      "very-important",
+                      "important",
+                      "mildly-important",
+                      "less-important",
+                    ].indexOf(importance) / 3
+                  }
+                  onValueChange={(value) =>
+                    setImportance(getImportanceLevel(value))
+                  }
+                  minimumTrackTintColor={getImportanceColor(importance)}
+                  maximumTrackTintColor="#d1d5db"
+                  thumbTintColor={getImportanceColor(importance)}
+                />
+              </View>
+              <Text
+                className="text-center text-sm mt-2 capitalize"
+                style={{ color: getImportanceColor(importance) }}
+              >
+                {importance.replace("-", " ")}
+              </Text>
+            </View>
 
             <TouchableOpacity
               className="bg-blue-500 p-4 rounded-lg mt-4"
