@@ -19,6 +19,9 @@ import { format } from "date-fns";
 import { DateNavigator } from "@/components/DateNavigator";
 import { useTaskContext } from "@/context/TaskContext";
 
+type SortType = "time" | "importance";
+type SortDirection = "asc" | "desc";
+
 const TimeInput = ({
   value,
   onChange,
@@ -103,6 +106,8 @@ export default function Tasks() {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [importance, setImportance] = useState<Task["importance"]>("important");
+  const [sortType, setSortType] = useState<SortType>("time");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   useEffect(() => {
     loadTasksForDate();
@@ -128,6 +133,29 @@ export default function Tasks() {
       default:
         return "#gray-500";
     }
+  };
+
+  const getSortedTasks = (tasks: Task[]) => {
+    const filteredTasks = tasks.filter(
+      (task) => task.date === format(selectedDate, "yyyy-MM-dd"),
+    );
+
+    return filteredTasks.sort((a, b) => {
+      if (sortType === "time") {
+        const comparison = a.startTime.localeCompare(b.startTime);
+        return sortDirection === "asc" ? comparison : -comparison;
+      } else {
+        const importanceOrder = {
+          "very-important": 4,
+          important: 3,
+          "mildly-important": 2,
+          "less-important": 1,
+        };
+        const comparison =
+          importanceOrder[b.importance] - importanceOrder[a.importance];
+        return sortDirection === "asc" ? -comparison : comparison;
+      }
+    });
   };
 
   const loadTasksForDate = async () => {
@@ -198,10 +226,9 @@ export default function Tasks() {
     setImportance("important"); // Reset importance
   };
 
-  const filteredAndSortedTasks = tasks
-    .filter((task) => task.date === format(selectedDate, "yyyy-MM-dd"))
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
+  const filteredTasks = tasks.filter(
+    (task) => task.date === format(selectedDate, "yyyy-MM-dd"),
+  );
   const onTimeChange = (
     event: DateTimePickerEvent,
     selectedTime: Date | undefined,
@@ -226,6 +253,53 @@ export default function Tasks() {
       <ActivityIndicator size="large" color="#4285f4" />
     </View>
   );
+  const SortControls = () => {
+    return (
+      <View className="flex-row justify-end items-center px-4 py-2 bg-gray-50">
+        <View className="flex-row items-center">
+          <Text className="text-gray-600 mr-2">Sort by:</Text>
+          <TouchableOpacity
+            className={`px-3 py-1 rounded-l-lg ${
+              sortType === "time" ? "bg-blue-500" : "bg-gray-200"
+            }`}
+            onPress={() => setSortType("time")}
+          >
+            <Text
+              className={sortType === "time" ? "text-white" : "text-gray-600"}
+            >
+              Time
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className={`px-3 py-1 rounded-r-lg ${
+              sortType === "importance" ? "bg-blue-500" : "bg-gray-200"
+            }`}
+            onPress={() => setSortType("importance")}
+          >
+            <Text
+              className={
+                sortType === "importance" ? "text-white" : "text-gray-600"
+              }
+            >
+              Importance
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="ml-2 p-2"
+            onPress={() =>
+              setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
+            }
+          >
+            <Ionicons
+              name={sortDirection === "asc" ? "arrow-up" : "arrow-down"}
+              size={20}
+              color="#4B5563"
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -233,17 +307,17 @@ export default function Tasks() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
       />
-
+      <SortControls />
       {isLocalLoading || isLoading ? (
         <LoadingIndicator />
       ) : (
         <ScrollView className="flex-1 px-4">
-          {filteredAndSortedTasks.length === 0 ? (
+          {getSortedTasks(filteredTasks).length === 0 ? (
             <Text className="text-gray-500 text-center mt-4">
               No tasks for this day
             </Text>
           ) : (
-            filteredAndSortedTasks.map((task: Task) => (
+            getSortedTasks(filteredTasks).map((task: Task) => (
               <View
                 key={task.id}
                 className={`flex-row items-center justify-between p-4 mb-2 rounded-lg border border-gray-200 ${
