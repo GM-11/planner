@@ -323,7 +323,7 @@ export default function Calendar() {
             {HOURS.map((hour) => (
               <View
                 key={hour}
-                className="flex-row h-20 border-t border-gray-100"
+                className="flex-row h-[80px] border-t border-gray-100"
               >
                 <View className="w-16 py-2">
                   <Text className="text-gray-500 text-right pr-2">
