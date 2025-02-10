@@ -5,6 +5,7 @@ import {
   Dimensions,
   ScrollView,
 } from "react-native";
+import * as Notifications from "expo-notifications";
 import { useAuth } from "../../hooks/useAuth";
 import { useTaskContext } from "@/context/TaskContext";
 import { useMemo, useState } from "react";
@@ -225,9 +226,9 @@ export default function Profile() {
                 duration={2000}
                 progressValueColor={"#333"}
                 maxValue={100}
-                title={`${timeFilter} average`}
+                title={`${timeFilter}`}
                 titleColor={"#333"}
-                titleStyle={{ fontWeight: "bold" }}
+                titleStyle={{ fontWeight: "bold", fontSize: 16 }}
                 inActiveStrokeColor={"#2ecc71"}
                 inActiveStrokeOpacity={0.2}
                 activeStrokeColor={"#2ecc71"}
