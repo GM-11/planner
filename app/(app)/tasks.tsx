@@ -32,6 +32,12 @@ const styles = {
   modalBg: "bg-primary-50",
 };
 
+const desktopStyles = {
+  container: "lg:flex-row lg:max-w-7xl lg:mx-auto lg:h-screen",
+  sidebar: "lg:w-1/4 lg:min-w-[300px] lg:bg-primary-800 lg:h-screen lg:pt-6",
+  mainContent: "lg:w-3/4 lg:px-8 lg:py-6",
+};
+
 const TimeInput = ({
   value,
   onChange,
@@ -240,129 +246,287 @@ export default function Tasks() {
   };
   return (
     <View className="flex-1 bg-primary-50">
-      {/* Header Section */}
-      <View className={styles.headerBg}>
-        <DateNavigator
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-        />
+      {/* Mobile Layout */}
+      <View className="lg:hidden flex-1">
+        {/* Mobile Header Section */}
+        <View className={styles.headerBg}>
+          <DateNavigator
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+          />
 
-        {/* Sort Controls */}
-        <View className="flex-row justify-between items-center px-6 pb-6">
-          <Text className="text-primary-100 font-poppins_600 text-lg">
-            Your Tasks
-          </Text>
-          <View className="flex-row items-center space-x-2">
-            <TouchableOpacity
-              className={`px-4 py-2 rounded-full ${
-                sortType === "time" ? "bg-primary-600" : "bg-primary-700/30"
-              }`}
-              onPress={() => setSortType("time")}
-            >
-              <Text className="text-primary-50 font-poppins_500 text-sm">
-                Time
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`px-4 py-2 rounded-full ${
-                sortType === "importance"
-                  ? "bg-primary-600"
-                  : "bg-primary-700/30"
-              }`}
-              onPress={() => setSortType("importance")}
-            >
-              <Text className="text-primary-50 font-poppins_500 text-sm">
-                Priority
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() =>
-                setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
-              }
-              className="w-8 h-8 rounded-full bg-primary-700/30 items-center justify-center"
-            >
-              <Ionicons
-                name={sortDirection === "asc" ? "arrow-up" : "arrow-down"}
-                size={18}
-                color="#f1f5f9"
-              />
-            </TouchableOpacity>
+          {/* Mobile Sort Controls */}
+          <View className="flex-row justify-between items-center px-6 pb-6">
+            <Text className="text-primary-100 font-poppins_600 text-lg">
+              Your Tasks
+            </Text>
+            <View className="flex-row items-center space-x-2">
+              <TouchableOpacity
+                className={`px-4 py-2 rounded-full ${
+                  sortType === "time" ? "bg-primary-600" : "bg-primary-700/30"
+                }`}
+                onPress={() => setSortType("time")}
+              >
+                <Text className="text-primary-50 font-poppins_500 text-sm">
+                  Time
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className={`px-4 py-2 rounded-full ${
+                  sortType === "importance"
+                    ? "bg-primary-600"
+                    : "bg-primary-700/30"
+                }`}
+                onPress={() => setSortType("importance")}
+              >
+                <Text className="text-primary-50 font-poppins_500 text-sm">
+                  Priority
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() =>
+                  setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
+                }
+                className="w-8 h-8 rounded-full bg-primary-700/30 items-center justify-center"
+              >
+                <Ionicons
+                  name={sortDirection === "asc" ? "arrow-up" : "arrow-down"}
+                  size={18}
+                  color="#f1f5f9"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Tasks List */}
-      {isLocalLoading || isLoading ? (
-        <LoadingIndicator />
-      ) : (
-        <ScrollView className="flex-1 px-4 pt-4">
-          {getSortedTasks(filteredTasks).length === 0 ? (
-            <View className="flex-1 items-center justify-center py-12">
-              <Ionicons name="calendar-outline" size={48} color="#94a3b8" />
-              <Text className="text-primary-400 font-poppins_500 mt-4">
-                No tasks for this day
-              </Text>
-            </View>
-          ) : (
-            getSortedTasks(filteredTasks).map((task: Task) => (
-              <View
-                key={task.id}
-                className={`mb-3 ${styles.cardBg} border-l-4 ${
-                  task.completed ? "opacity-60" : ""
-                }`}
-                style={{ borderLeftColor: importanceColors[task.importance] }}
-              >
-                <View className="flex-row items-center p-4">
-                  <TouchableOpacity
-                    onPress={() => toggleTask(task.id)}
-                    className="flex-row items-center flex-1"
-                  >
-                    <View
-                      className={`w-6 h-6 rounded-full border-2 mr-3 items-center justify-center ${
-                        task.completed
-                          ? "bg-primary-600 border-primary-600"
-                          : "border-primary-300"
-                      }`}
+        {/* Mobile Tasks List */}
+        {isLocalLoading || isLoading ? (
+          <LoadingIndicator />
+        ) : (
+          <ScrollView className="flex-1 px-4 pt-4">
+            {getSortedTasks(filteredTasks).length === 0 ? (
+              <View className="flex-1 items-center justify-center py-12">
+                <Ionicons name="calendar-outline" size={48} color="#94a3b8" />
+                <Text className="text-primary-400 font-poppins_500 mt-4">
+                  No tasks for this day
+                </Text>
+              </View>
+            ) : (
+              getSortedTasks(filteredTasks).map((task: Task) => (
+                <View
+                  key={task.id}
+                  className={`mb-3 ${styles.cardBg} border-l-4 ${
+                    task.completed ? "opacity-60" : ""
+                  }`}
+                  style={{ borderLeftColor: importanceColors[task.importance] }}
+                >
+                  <View className="flex-row items-center p-4">
+                    <TouchableOpacity
+                      onPress={() => toggleTask(task.id)}
+                      className="flex-row items-center flex-1"
                     >
-                      {task.completed && (
-                        <Ionicons name="checkmark" size={16} color="white" />
-                      )}
-                    </View>
-                    <View>
-                      <Text
-                        className={`font-poppins_600 text-primary-800 ${
-                          task.completed ? "line-through" : ""
+                      <View
+                        className={`w-6 h-6 rounded-full border-2 mr-3 items-center justify-center ${
+                          task.completed
+                            ? "bg-primary-600 border-primary-600"
+                            : "border-primary-300"
                         }`}
                       >
-                        {task.text}
-                      </Text>
-                      <Text className="font-poppins_400 text-primary-400 text-sm">
-                        {task.startTime} - {task.endTime}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => deleteTask(task.id)}
-                    className="p-2"
-                  >
-                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                  </TouchableOpacity>
+                        {task.completed && (
+                          <Ionicons name="checkmark" size={16} color="white" />
+                        )}
+                      </View>
+                      <View>
+                        <Text
+                          className={`font-poppins_600 text-primary-800 ${
+                            task.completed ? "line-through" : ""
+                          }`}
+                        >
+                          {task.text}
+                        </Text>
+                        <Text className="font-poppins_400 text-primary-400 text-sm">
+                          {task.startTime} - {task.endTime}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => deleteTask(task.id)}
+                      className="p-2"
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={20}
+                        color="#ef4444"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      )}
+              ))
+            )}
+          </ScrollView>
+        )}
 
-      {/* Add Task Button */}
-      <TouchableOpacity
-        onPress={() => setIsModalVisible(true)}
-        disabled={isLocalLoading}
-        className="absolute bottom-6 right-6 w-14 h-14 bg-primary-600
-                   rounded-full items-center justify-center shadow-lg"
-      >
-        <Ionicons name="add" size={30} color="white" />
-      </TouchableOpacity>
+        {/* Mobile Add Task Button */}
+        <TouchableOpacity
+          onPress={() => setIsModalVisible(true)}
+          disabled={isLocalLoading}
+          className="absolute bottom-6 right-6 w-14 h-14 bg-primary-600
+                       rounded-full items-center justify-center shadow-lg"
+        >
+          <Ionicons name="add" size={30} color="white" />
+        </TouchableOpacity>
+      </View>
+      {/* Desktop Layout */}
+      <View className="hidden lg:flex flex-1 flex-row">
+        {/* Left Sidebar */}
+        <View className={desktopStyles.sidebar}>
+          <View className="px-6">
+            <Text className="text-primary-50 font-poppins_700 text-2xl mb-8">
+              Task Planner
+            </Text>
+            <DateNavigator
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+            />
+
+            {/* Desktop Sort Controls */}
+            <View className="mt-8 space-y-4">
+              <Text className="text-primary-100 font-poppins_600">Sort By</Text>
+              <View className="space-y-2">
+                <TouchableOpacity
+                  className={`px-4 py-3 rounded-xl ${
+                    sortType === "time" ? "bg-primary-600" : "bg-primary-700/30"
+                  }`}
+                  onPress={() => setSortType("time")}
+                >
+                  <Text className="text-primary-50 font-poppins_500">Time</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className={`px-4 py-3 rounded-xl ${
+                    sortType === "importance"
+                      ? "bg-primary-600"
+                      : "bg-primary-700/30"
+                  }`}
+                  onPress={() => setSortType("importance")}
+                >
+                  <Text className="text-primary-50 font-poppins_500">
+                    Priority
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    setSortDirection((prev) =>
+                      prev === "asc" ? "desc" : "asc",
+                    )
+                  }
+                  className="px-4 py-3 rounded-xl bg-primary-700/30 flex-row items-center"
+                >
+                  <Text className="text-primary-50 font-poppins_500 mr-2">
+                    Order
+                  </Text>
+                  <Ionicons
+                    name={sortDirection === "asc" ? "arrow-up" : "arrow-down"}
+                    size={18}
+                    color="#f1f5f9"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Main Content Area */}
+        <View className={desktopStyles.mainContent}>
+          {/* Desktop Header */}
+          <View className="flex-row justify-between items-center mb-6">
+            <Text className="text-primary-800 font-poppins_700 text-2xl">
+              Your Tasks
+            </Text>
+            <TouchableOpacity
+              onPress={() => setIsModalVisible(true)}
+              className="bg-primary-600 px-6 py-3 rounded-xl flex-row items-center"
+            >
+              <Ionicons name="add" size={24} color="white" />
+              <Text className="text-white font-poppins_600 ml-2">
+                Add New Task
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Desktop Tasks List */}
+          {isLocalLoading || isLoading ? (
+            <LoadingIndicator />
+          ) : (
+            <ScrollView className="flex-1">
+              {getSortedTasks(filteredTasks).length === 0 ? (
+                <View className="flex-1 items-center justify-center py-12">
+                  <Ionicons name="calendar-outline" size={64} color="#94a3b8" />
+                  <Text className="text-primary-400 font-poppins_500 mt-4">
+                    No tasks for this day
+                  </Text>
+                </View>
+              ) : (
+                getSortedTasks(filteredTasks).map((task: Task) => (
+                  <View
+                    key={task.id}
+                    className={`mb-3 ${styles.cardBg} border-l-4 ${
+                      task.completed ? "opacity-60" : ""
+                    }`}
+                    style={{
+                      borderLeftColor: importanceColors[task.importance],
+                    }}
+                  >
+                    <View className="flex-row items-center p-4">
+                      <TouchableOpacity
+                        onPress={() => toggleTask(task.id)}
+                        className="flex-row items-center flex-1"
+                      >
+                        <View
+                          className={`w-6 h-6 rounded-full border-2 mr-3 items-center justify-center ${
+                            task.completed
+                              ? "bg-primary-600 border-primary-600"
+                              : "border-primary-300"
+                          }`}
+                        >
+                          {task.completed && (
+                            <Ionicons
+                              name="checkmark"
+                              size={16}
+                              color="white"
+                            />
+                          )}
+                        </View>
+                        <View>
+                          <Text
+                            className={`font-poppins_600 text-primary-800 ${
+                              task.completed ? "line-through" : ""
+                            }`}
+                          >
+                            {task.text}
+                          </Text>
+                          <Text className="font-poppins_400 text-primary-400 text-sm">
+                            {task.startTime} - {task.endTime}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => deleteTask(task.id)}
+                        className="p-2"
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={20}
+                          color="#ef4444"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          )}
+        </View>
+      </View>
 
       {/* Add Task Modal */}
       <Modal
@@ -375,7 +539,9 @@ export default function Tasks() {
         }}
       >
         <View className="flex-1 justify-end bg-black/30">
-          <View className={`${styles.modalBg} rounded-t-3xl p-6`}>
+          <View
+            className={`${styles.modalBg} rounded-t-3xl p-6 lg:max-w-lg lg:mx-auto lg:my-auto lg:rounded-3xl`}
+          >
             <View className="flex-row justify-between items-center mb-6">
               <Text className="text-xl font-poppins_600 text-primary-800">
                 Add New Task
