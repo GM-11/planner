@@ -7,8 +7,6 @@ import {
   ScrollView,
   Modal,
   Platform,
-  ActivityIndicator,
-  Alert,
 } from "react-native";
 import * as Notifications from "expo-notifications";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,9 +18,19 @@ import DateTimePicker, {
 import { format } from "date-fns";
 import { DateNavigator } from "@/components/DateNavigator";
 import { useTaskContext } from "@/context/TaskContext";
+import { importanceColors, importanceLevels } from "@/utils/constants";
+import { LoadingIndicator } from "@/components/LoadingIndicator";
 
 type SortType = "time" | "importance";
 type SortDirection = "asc" | "desc";
+
+const styles = {
+  headerBg: "bg-primary-800 rounded-b-[30px]",
+  cardBg: "bg-white rounded-xl shadow-sm",
+  inputContainer:
+    "bg-white rounded-2xl px-4 shadow-sm border border-primary-200",
+  modalBg: "bg-primary-50",
+};
 
 const TimeInput = ({
   value,
@@ -107,78 +115,13 @@ export default function Tasks() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
-  const [importance, setImportance] = useState<Task["importance"]>("important");
+  const [importance, setImportance] = useState<number>(0);
   const [sortType, setSortType] = useState<SortType>("time");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   useEffect(() => {
     loadTasksForDate();
   }, [selectedDate]);
-
-  useEffect(() => {
-    // Request notification permissions
-    const requestPermissions = async () => {
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== "granted") {
-        alert("Please enable notifications to receive task reminders!");
-      }
-    };
-
-    // Get Expo push token
-    const getNotificationToken = async () => {
-      try {
-        const token = await Notifications.getExpoPushTokenAsync();
-        // Store this token with your tasks
-      } catch (error) {
-        console.error("Error getting push token:", error);
-      }
-    };
-
-    requestPermissions();
-    getNotificationToken();
-
-    // Set up notification listeners
-    const notificationListener = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        console.log("Notification received:", notification);
-      },
-    );
-
-    const responseListener =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("Notification response:", response);
-      });
-
-    return () => {
-      Notifications.removeNotificationSubscription(notificationListener);
-      Notifications.removeNotificationSubscription(responseListener);
-    };
-  }, []);
-
-  function getImportanceLevel(value: number): string {
-    const levels = [
-      "very-important",
-      "important",
-      "mildly-important",
-      "less-important",
-    ];
-    return levels[Math.round(value)] || levels[0];
-  }
-
-  const getImportanceColor = (importance: Task["importance"]): string => {
-    switch (importance) {
-      case "very-important":
-        return "#ef4444";
-      case "important":
-        return "#f97316";
-      case "mildly-important":
-        return "#eab308";
-      case "less-important":
-        return "#22c55e";
-      default:
-        return "#gray-500";
-    }
-  };
 
   const getSortedTasks = (tasks: Task[]) => {
     const filteredTasks = tasks.filter(
@@ -190,14 +133,7 @@ export default function Tasks() {
         const comparison = a.startTime.localeCompare(b.startTime);
         return sortDirection === "asc" ? comparison : -comparison;
       } else {
-        const importanceOrder = {
-          "very-important": 4,
-          important: 3,
-          "mildly-important": 2,
-          "less-important": 1,
-        };
-        const comparison =
-          importanceOrder[b.importance] - importanceOrder[a.importance];
+        const comparison = b.importance - a.importance;
         return sortDirection === "asc" ? -comparison : comparison;
       }
     });
@@ -235,22 +171,16 @@ export default function Tasks() {
       setTasks(updatedTasks);
       setIsModalVisible(false);
       resetForm();
-
-      const res = Notifications.scheduleNotificationAsync({
+      Notifications.scheduleNotificationAsync({
         content: {
-          title: `Task reminder`,
-          interruptionLevel: "active",
-          body: `Time for ${newTask} has started`,
-          data: {
-            taskId: newTaskItem.id,
-          },
+          title: "Task Reminder",
+          body: `Time for ${newTask}`,
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: new Date(startTime),
         },
       });
-      console.log(res);
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -284,7 +214,7 @@ export default function Tasks() {
     setEndTime(new Date());
     setShowStartPicker(false);
     setShowEndPicker(false);
-    setImportance("important"); // Reset importance
+    setImportance(0); // Reset importance
   };
 
   const filteredTasks = tasks.filter(
@@ -308,137 +238,133 @@ export default function Tasks() {
       }
     }
   };
+  return (
+    <View className="flex-1 bg-primary-50">
+      {/* Header Section */}
+      <View className={styles.headerBg}>
+        <DateNavigator
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+        />
 
-  const LoadingIndicator = () => (
-    <View className="flex-1 justify-center items-center">
-      <ActivityIndicator size="large" color="#4285f4" />
-    </View>
-  );
-  const SortControls = () => {
-    return (
-      <View className="flex-row justify-end items-center px-4 py-2 bg-gray-50">
-        <View className="flex-row items-center">
-          <Text className="text-gray-600 mr-2">Sort by:</Text>
-          <TouchableOpacity
-            className={`px-3 py-1 rounded-l-lg ${
-              sortType === "time" ? "bg-blue-500" : "bg-gray-200"
-            }`}
-            onPress={() => setSortType("time")}
-          >
-            <Text
-              className={sortType === "time" ? "text-white" : "text-gray-600"}
+        {/* Sort Controls */}
+        <View className="flex-row justify-between items-center px-6 pb-6">
+          <Text className="text-primary-100 font-poppins_600 text-lg">
+            Your Tasks
+          </Text>
+          <View className="flex-row items-center space-x-2">
+            <TouchableOpacity
+              className={`px-4 py-2 rounded-full ${
+                sortType === "time" ? "bg-primary-600" : "bg-primary-700/30"
+              }`}
+              onPress={() => setSortType("time")}
             >
-              Time
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className={`px-3 py-1 rounded-r-lg ${
-              sortType === "importance" ? "bg-blue-500" : "bg-gray-200"
-            }`}
-            onPress={() => setSortType("importance")}
-          >
-            <Text
-              className={
-                sortType === "importance" ? "text-white" : "text-gray-600"
+              <Text className="text-primary-50 font-poppins_500 text-sm">
+                Time
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`px-4 py-2 rounded-full ${
+                sortType === "importance"
+                  ? "bg-primary-600"
+                  : "bg-primary-700/30"
+              }`}
+              onPress={() => setSortType("importance")}
+            >
+              <Text className="text-primary-50 font-poppins_500 text-sm">
+                Priority
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
               }
+              className="w-8 h-8 rounded-full bg-primary-700/30 items-center justify-center"
             >
-              Importance
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="ml-2 p-2"
-            onPress={() =>
-              setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
-            }
-          >
-            <Ionicons
-              name={sortDirection === "asc" ? "arrow-up" : "arrow-down"}
-              size={20}
-              color="#4B5563"
-            />
-          </TouchableOpacity>
+              <Ionicons
+                name={sortDirection === "asc" ? "arrow-up" : "arrow-down"}
+                size={18}
+                color="#f1f5f9"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    );
-  };
 
-  return (
-    <View className="flex-1 bg-white">
-      <DateNavigator
-        selectedDate={selectedDate}
-        onDateChange={setSelectedDate}
-      />
-      <SortControls />
+      {/* Tasks List */}
       {isLocalLoading || isLoading ? (
         <LoadingIndicator />
       ) : (
-        <ScrollView className="flex-1 px-4">
+        <ScrollView className="flex-1 px-4 pt-4">
           {getSortedTasks(filteredTasks).length === 0 ? (
-            <Text className="text-gray-500 text-center mt-4">
-              No tasks for this day
-            </Text>
+            <View className="flex-1 items-center justify-center py-12">
+              <Ionicons name="calendar-outline" size={48} color="#94a3b8" />
+              <Text className="text-primary-400 font-poppins_500 mt-4">
+                No tasks for this day
+              </Text>
+            </View>
           ) : (
             getSortedTasks(filteredTasks).map((task: Task) => (
               <View
                 key={task.id}
-                className={`flex-row items-center justify-between p-4 mb-2 rounded-lg border border-gray-200 ${
-                  task.completed ? "bg-gray-100" : "bg-white"
+                className={`mb-3 ${styles.cardBg} border-l-4 ${
+                  task.completed ? "opacity-60" : ""
                 }`}
-                style={{ borderColor: getImportanceColor(task.importance) }}
+                style={{ borderLeftColor: importanceColors[task.importance] }}
               >
-                <TouchableOpacity
-                  className="flex-1 flex-row items-center"
-                  onPress={() => toggleTask(task.id)}
-                  disabled={isLocalLoading}
-                >
-                  <View
-                    className={`w-6 h-6 border-2 rounded-full mr-2 ${
-                      task.completed
-                        ? "bg-green-500 border-green-500"
-                        : "border-gray-300"
-                    }`}
+                <View className="flex-row items-center p-4">
+                  <TouchableOpacity
+                    onPress={() => toggleTask(task.id)}
+                    className="flex-row items-center flex-1"
                   >
-                    {task.completed && (
-                      <Ionicons name="checkmark" size={20} color="white" />
-                    )}
-                  </View>
-                  <View>
-                    <Text
-                      className={`font-semibold ${
+                    <View
+                      className={`w-6 h-6 rounded-full border-2 mr-3 items-center justify-center ${
                         task.completed
-                          ? "text-gray-500 line-through"
-                          : "text-black"
+                          ? "bg-primary-600 border-primary-600"
+                          : "border-primary-300"
                       }`}
                     >
-                      {task.text}
-                    </Text>
-                    <Text className="text-gray-500 text-sm">
-                      {task.startTime} - {task.endTime}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className="ml-4"
-                  onPress={() => deleteTask(task.id)}
-                  disabled={isLocalLoading}
-                >
-                  <Ionicons name="trash-outline" size={24} color="red" />
-                </TouchableOpacity>
+                      {task.completed && (
+                        <Ionicons name="checkmark" size={16} color="white" />
+                      )}
+                    </View>
+                    <View>
+                      <Text
+                        className={`font-poppins_600 text-primary-800 ${
+                          task.completed ? "line-through" : ""
+                        }`}
+                      >
+                        {task.text}
+                      </Text>
+                      <Text className="font-poppins_400 text-primary-400 text-sm">
+                        {task.startTime} - {task.endTime}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => deleteTask(task.id)}
+                    className="p-2"
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           )}
         </ScrollView>
       )}
 
+      {/* Add Task Button */}
       <TouchableOpacity
-        className="absolute bottom-6 right-6 w-14 h-14 bg-blue-500 rounded-full items-center justify-center shadow-lg"
         onPress={() => setIsModalVisible(true)}
         disabled={isLocalLoading}
+        className="absolute bottom-6 right-6 w-14 h-14 bg-primary-600
+                   rounded-full items-center justify-center shadow-lg"
       >
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
 
+      {/* Add Task Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -448,146 +374,151 @@ export default function Tasks() {
           resetForm();
         }}
       >
-        <View className="flex-1 justify-end">
-          <View className="bg-white p-4 rounded-t-3xl">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold">Add New Task</Text>
+        <View className="flex-1 justify-end bg-black/30">
+          <View className={`${styles.modalBg} rounded-t-3xl p-6`}>
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-xl font-poppins_600 text-primary-800">
+                Add New Task
+              </Text>
               <TouchableOpacity
                 onPress={() => {
                   setIsModalVisible(false);
                   resetForm();
                 }}
+                className="p-2"
               >
-                <Ionicons name="close" size={24} color="black" />
+                <Ionicons name="close" size={24} color="#475569" />
               </TouchableOpacity>
             </View>
 
-            <TextInput
-              className="border border-gray-300 p-3 rounded-lg mb-4"
-              placeholder="Task name"
-              value={newTask}
-              onChangeText={setNewTask}
-            />
-
-            <TimeInput
-              value={startTime}
-              onChange={(date) => {
-                setStartTime(date);
-                setShowStartPicker(false);
-              }}
-              label="Start Time"
-              setShowStartPicker={setShowStartPicker}
-              setShowEndPicker={setShowEndPicker}
-            />
-
-            <TimeInput
-              value={endTime}
-              onChange={(date) => {
-                setEndTime(date);
-                setShowEndPicker(false);
-              }}
-              label="End Time"
-              setShowStartPicker={setShowStartPicker}
-              setShowEndPicker={setShowEndPicker}
-            />
-
-            {Platform.OS !== "web" && (
-              <>
-                {Platform.OS === "android" ? (
-                  (showStartPicker || showEndPicker) && (
-                    <DateTimePicker
-                      value={showStartPicker ? startTime : endTime}
-                      mode="time"
-                      is24Hour={true}
-                      onChange={(event, date) =>
-                        onTimeChange(
-                          event,
-                          date,
-                          showStartPicker ? "start" : "end",
-                        )
-                      }
-                    />
-                  )
-                ) : (
-                  <>
-                    {showStartPicker && (
-                      <DateTimePicker
-                        value={startTime}
-                        mode="time"
-                        is24Hour={true}
-                        onChange={(event, date) =>
-                          onTimeChange(event, date, "start")
-                        }
-                        style={{ width: 100 }}
-                      />
-                    )}
-                    {showEndPicker && (
-                      <DateTimePicker
-                        value={endTime}
-                        mode="time"
-                        is24Hour={true}
-                        onChange={(event, date) =>
-                          onTimeChange(event, date, "end")
-                        }
-                        style={{ width: 100 }}
-                      />
-                    )}
-                  </>
-                )}
-              </>
-            )}
-
-            <View className="mb-4">
-              <Text className="text-sm text-gray-600 mb-2">
-                Importance Level
+            {/* Task Input */}
+            <View className="mb-6">
+              <Text className="text-primary-700 font-poppins_500 mb-2 ml-1">
+                Task Name
               </Text>
-              <View className="px-2">
-                <Slider
-                  minimumValue={0}
-                  maximumValue={3}
-                  step={1}
-                  value={
-                    importance === "very-important"
-                      ? 3
-                      : importance === "important"
-                        ? 2
-                        : importance === "mildly-important"
-                          ? 1
-                          : 0
-                  }
-                  onValueChange={(value) => {
-                    const newImportance =
-                      value === 3
-                        ? "very-important"
-                        : value === 2
-                          ? "important"
-                          : value === 1
-                            ? "mildly-important"
-                            : "less-important";
-                    setImportance(newImportance);
-                  }}
-                  minimumTrackTintColor={getImportanceColor(importance)}
-                  maximumTrackTintColor="#d1d5db"
-                  thumbTintColor={getImportanceColor(importance)}
+              <View className={styles.inputContainer}>
+                <TextInput
+                  value={newTask}
+                  onChangeText={setNewTask}
+                  placeholder="Enter task name"
+                  className="p-4 font-poppins_400 text-primary-800"
+                  placeholderTextColor="#94a3b8"
                 />
               </View>
+            </View>
+
+            {/* Time Inputs */}
+            <View className="flex-row space-x-4 mb-6">
+              <View className="flex-1">
+                <Text className="text-primary-700 font-poppins_500 mb-2 ml-1">
+                  Start Time
+                </Text>
+                <View className={styles.inputContainer}>
+                  <TimeInput
+                    value={startTime}
+                    onChange={(date) => {
+                      setStartTime(date);
+                      setShowStartPicker(false);
+                    }}
+                    label="Start Time"
+                    setShowStartPicker={setShowStartPicker}
+                    setShowEndPicker={setShowEndPicker}
+                  />
+                </View>
+              </View>
+              <View className="flex-1">
+                <Text className="text-primary-700 font-poppins_500 mb-2 ml-1">
+                  End Time
+                </Text>
+                <View className={styles.inputContainer}>
+                  <TimeInput
+                    value={endTime}
+                    onChange={(date) => {
+                      setEndTime(date);
+                      setShowEndPicker(false);
+                    }}
+                    label="End Time"
+                    setShowStartPicker={setShowStartPicker}
+                    setShowEndPicker={setShowEndPicker}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Importance Slider */}
+            <View className="mb-6">
+              <Text className="text-primary-700 font-poppins_500 mb-4">
+                Priority Level
+              </Text>
+              <Slider
+                minimumValue={0}
+                maximumValue={3}
+                step={1}
+                value={importance}
+                onValueChange={setImportance}
+                minimumTrackTintColor={importanceColors[importance]}
+                maximumTrackTintColor="#e2e8f0"
+                thumbTintColor={importanceColors[importance]}
+              />
               <Text
-                className="text-center text-sm mt-2 capitalize"
-                style={{ color: getImportanceColor(importance) }}
+                className="text-center font-poppins_500 mt-2"
+                style={{ color: importanceColors[importance] }}
               >
-                {importance.replace("-", " ")}
+                {importanceLevels[importance]}
               </Text>
             </View>
 
+            {/* Add Button */}
             <TouchableOpacity
-              className="bg-blue-500 p-4 rounded-lg mt-4"
               onPress={addTask}
+              className="bg-primary-600 p-4 rounded-xl"
             >
-              <Text className="text-white text-center font-bold">Add Task</Text>
+              <Text className="text-white text-center font-poppins_600">
+                Add Task
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
+      {/* Time Picker (Platform Specific) */}
+      {Platform.OS !== "web" && (
+        <>
+          {Platform.OS === "android" ? (
+            (showStartPicker || showEndPicker) && (
+              <DateTimePicker
+                value={showStartPicker ? startTime : endTime}
+                mode="time"
+                is24Hour={true}
+                onChange={(event, date) =>
+                  onTimeChange(event, date, showStartPicker ? "start" : "end")
+                }
+              />
+            )
+          ) : (
+            <>
+              {showStartPicker && (
+                <DateTimePicker
+                  value={startTime}
+                  mode="time"
+                  is24Hour={true}
+                  onChange={(event, date) => onTimeChange(event, date, "start")}
+                  style={{ width: 100 }}
+                />
+              )}
+              {showEndPicker && (
+                <DateTimePicker
+                  value={endTime}
+                  mode="time"
+                  is24Hour={true}
+                  onChange={(event, date) => onTimeChange(event, date, "end")}
+                  style={{ width: 100 }}
+                />
+              )}
+            </>
+          )}
+        </>
+      )}
     </View>
   );
 }

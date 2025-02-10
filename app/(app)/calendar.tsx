@@ -15,16 +15,35 @@ import { useTaskContext } from "@/context/TaskContext";
 
 type ViewType = "daily" | "weekly" | "monthly";
 
+const styles = {
+  headerBg: "bg-primary-800 rounded-b-[30px]",
+  cardBg: "bg-white rounded-xl shadow-sm",
+  taskItem: "bg-primary-600 rounded-lg shadow-sm",
+  timeLabel: "text-primary-400 font-poppins_400",
+};
+
+const calendarTheme = {
+  backgroundColor: "transparent",
+  calendarBackground: "transparent",
+  textSectionTitleColor: "#475569",
+  selectedDayBackgroundColor: "#7e22ce",
+  selectedDayTextColor: "#ffffff",
+  todayTextColor: "#7e22ce",
+  dayTextColor: "#1e293b",
+  textDisabledColor: "#94a3b8",
+  dotColor: "#7e22ce",
+  selectedDotColor: "#ffffff",
+  arrowColor: "#7e22ce",
+  monthTextColor: "#1e293b",
+  textDayFontFamily: "Poppins_400Regular",
+  textMonthFontFamily: "Poppins_600SemiBold",
+  textDayHeaderFontFamily: "Poppins_500Medium",
+};
+
 export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewType, setViewType] = useState<ViewType>("daily");
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [, setShowNewTaskModal] = useState(false);
-  const [newTask, setNewTask] = useState("");
-  const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
-  const [, setShowStartPicker] = useState(false);
-  const [, setShowEndPicker] = useState(false);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
 
   const timeScrollRef = useRef<ScrollView>(null);
@@ -84,29 +103,29 @@ export default function Calendar() {
     }
   };
 
-  const _addTask = async () => {
-    if (newTask.trim() === "") return;
+  // const _addTask = async () => {
+  //   if (newTask.trim() === "") return;
 
-    const newTaskItem: Task = {
-      id: Date.now(),
-      text: newTask,
-      startTime: format(startTime, "HH:mm"),
-      endTime: format(endTime, "HH:mm"),
-      date: format(selectedDate, "yyyy-MM-dd"),
-      completed: false,
-      importance: "mildly-important",
-    };
+  //   const newTaskItem: Task = {
+  //     id: Date.now(),
+  //     text: newTask,
+  //     startTime: format(startTime, "HH:mm"),
+  //     endTime: format(endTime, "HH:mm"),
+  //     date: format(selectedDate, "yyyy-MM-dd"),
+  //     completed: false,
+  //     importance: 0,
+  //   };
 
-    try {
-      const updatedTasks = [...tasks, newTaskItem];
-      await updateTasks(updatedTasks, newTaskItem.date);
-      setTasks(updatedTasks);
-      setShowNewTaskModal(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error adding task:", error);
-    }
-  };
+  //   try {
+  //     const updatedTasks = [...tasks, newTaskItem];
+  //     await updateTasks(updatedTasks, newTaskItem.date);
+  //     setTasks(updatedTasks);
+  //     setShowNewTaskModal(false);
+  //     resetForm();
+  //   } catch (error) {
+  //     console.error("Error adding task:", error);
+  //   }
+  // };
 
   const getTimeSlotTasks = (hour: number, date: Date) => {
     return tasks.filter((task) => {
@@ -115,14 +134,6 @@ export default function Calendar() {
       const taskStartHour = parseInt(task.startTime.split(":")[0]);
       return taskDate === currentDate && taskStartHour === hour;
     });
-  };
-
-  const resetForm = () => {
-    setNewTask("");
-    setStartTime(new Date());
-    setEndTime(new Date());
-    setShowStartPicker(false);
-    setShowEndPicker(false);
   };
 
   const CurrentTimeLine = () => {
@@ -154,34 +165,34 @@ export default function Calendar() {
   };
 
   const ViewSelector = () => (
-    <View className="flex-row items-center px-4 py-2 border-b border-gray-200">
-      <View className="flex-row items-center flex-1">
-        <Text className="text-xl font-semibold">
-          {selectedDate.toLocaleString("default", {
-            month: "long",
-            year: "numeric",
-          })}
-        </Text>
-        <ChevronDown size={20} className="ml-1" />
-      </View>
-      <View className="flex-row space-x-2">
-        {["daily", "weekly", "monthly"].map((view) => (
-          <TouchableOpacity
-            key={view}
-            onPress={() => setViewType(view as ViewType)}
-            className={`px-3 py-1 rounded-md ${
-              viewType === view ? "bg-blue-100" : ""
-            }`}
-          >
-            <Text
-              className={`${
-                viewType === view ? "text-blue-600" : "text-gray-600"
-              } capitalize`}
+    <View className={`${styles.headerBg} px-6 py-4`}>
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center space-x-2">
+          <Text className="text-primary-50 font-poppins_600 text-xl">
+            {selectedDate.toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+            })}
+          </Text>
+          <ChevronDown size={20} color="#f8fafc" />
+        </View>
+        <View className="flex-row space-x-2">
+          {["daily", "weekly", "monthly"].map((view) => (
+            <TouchableOpacity
+              key={view}
+              onPress={() => setViewType(view as ViewType)}
+              className={`px-4 py-2 rounded-full ${
+                viewType === view ? "bg-primary-600" : "bg-primary-700/30"
+              }`}
             >
-              {view}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                className={`font-poppins_500 text-sm text-primary-50 capitalize`}
+              >
+                {view}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -189,15 +200,24 @@ export default function Calendar() {
   const TaskList = () => (
     <ScrollView className="p-4">
       {tasks.length === 0 ? (
-        <Text className="text-gray-500 text-center">No tasks for this day</Text>
+        <View className="flex-1 items-center justify-center py-12">
+          <Text className="text-primary-400 font-poppins_500">
+            No tasks for this day
+          </Text>
+        </View>
       ) : (
         tasks.map((task) => (
           <View
             key={task.id}
-            className="p-4 mb-2 bg-white rounded-lg border border-gray-200"
+            className={`${styles.cardBg} p-4 mb-2 border-l-4`}
+            style={{
+              borderLeftColor: task.completed ? "#94a3b8" : "#7e22ce",
+            }}
           >
-            <Text className="font-semibold">{task.text}</Text>
-            <Text className="text-gray-500 text-sm">
+            <Text className="font-poppins_600 text-primary-800">
+              {task.text}
+            </Text>
+            <Text className="font-poppins_400 text-primary-400 text-sm">
               {task.startTime} - {task.endTime}
             </Text>
           </View>
@@ -210,9 +230,9 @@ export default function Calendar() {
     const slotTasks = getTimeSlotTasks(hour, date);
 
     return (
-      <View className="flex-row h-[80px] border-t border-gray-100">
+      <View className="flex-row h-[80px] border-t border-primary-100">
         <View className="w-16 py-2">
-          <Text className="text-gray-500 text-right pr-2">
+          <Text className="text-primary-400 font-poppins_400 text-right pr-2">
             {hour === 0
               ? "12 AM"
               : hour < 12
@@ -222,12 +242,13 @@ export default function Calendar() {
                   : `${hour - 12} PM`}
           </Text>
         </View>
-        <View className="flex-1 border-l border-gray-200">
+        <View className="flex-1 border-l border-primary-200">
           {slotTasks.map((task) => (
             <View
               key={task.id}
-              className="absolute m-1 rounded p-2 left-0 right-0 bg-blue-500"
+              className="absolute rounded-lg p-2 left-0 right-0"
               style={{
+                backgroundColor: `${task.completed ? "#94a3b8" : "#7e22ce"}`,
                 top: `${(parseInt(task.startTime.split(":")[1]) / 60) * 100}%`,
                 height: `${
                   ((parseInt(task.endTime.split(":")[0]) * 60 +
@@ -239,8 +260,8 @@ export default function Calendar() {
                 }%`,
               }}
             >
-              <Text className="text-white font-medium">{task.text}</Text>
-              <Text className="text-white text-xs">
+              <Text className="text-white font-poppins_500">{task.text}</Text>
+              <Text className="text-primary-100 font-poppins_400 text-xs">
                 {task.startTime} - {task.endTime}
               </Text>
             </View>
@@ -272,6 +293,7 @@ export default function Calendar() {
       <DateNavigator
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
+        variant="light"
       />
       {isLocalLoading || isLoading ? (
         <LoadingIndicator />
@@ -333,8 +355,9 @@ export default function Calendar() {
                     {getTimeSlotTasks(hour, date).map((task) => (
                       <View
                         key={task.id}
-                        className="absolute m-1 rounded p-2 left-0 right-0 bg-blue-500"
+                        className="absolute m-1 rounded-lg p-2 left-0 right-0"
                         style={{
+                          backgroundColor: `${task.completed ? "#94a3b8" : "#7e22ce"}`, // Using theme colors
                           top: `${(parseInt(task.startTime.split(":")[1]) / 60) * 100}%`,
                           height: `${
                             ((parseInt(task.endTime.split(":")[0]) * 60 +
@@ -344,14 +367,28 @@ export default function Calendar() {
                               60) *
                             100
                           }%`,
+                          opacity: task.completed ? 0.6 : 1, // Adding opacity for completed tasks
                         }}
                       >
-                        <Text className="text-white font-medium text-xs">
-                          {task.text}
-                        </Text>
-                        <Text className="text-white text-xs">
-                          {task.startTime} - {task.endTime}
-                        </Text>
+                        {/* Only show text if the task duration is long enough */}
+                        {parseInt(task.endTime.split(":")[0]) * 60 +
+                          parseInt(task.endTime.split(":")[1]) -
+                          (parseInt(task.startTime.split(":")[0]) * 60 +
+                            parseInt(task.startTime.split(":")[1])) >=
+                        30 ? (
+                          <>
+                            <Text className="text-white font-poppins_500 text-xs line-clamp-1">
+                              {task.text}
+                            </Text>
+                            <Text className="text-primary-100 font-poppins_400 text-xs">
+                              {task.startTime} - {task.endTime}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text className="text-white font-poppins_500 text-xs line-clamp-1">
+                            {task.text}
+                          </Text>
+                        )}
                       </View>
                     ))}
                   </View>
@@ -409,21 +446,14 @@ export default function Calendar() {
   );
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-primary-50">
       <ViewSelector />
 
-      {viewType === "daily" && renderDailyView()}
-      {viewType === "weekly" && renderWeeklyView()}
-      {viewType === "monthly" && renderMonthlyView()}
-
-      {/* <TouchableOpacity
-        onPress={() => setShowNewTaskModal(true)}
-        className="absolute bottom-6 right-6 w-14 h-14 bg-blue-600 rounded-full items-center justify-center shadow-lg"
-      >
-        <Plus color="white" size={24} />
-      </TouchableOpacity> */}
-
-      {/* <NewTaskModal /> */}
+      <View className="flex-1">
+        {viewType === "daily" && renderDailyView()}
+        {viewType === "weekly" && renderWeeklyView()}
+        {viewType === "monthly" && renderMonthlyView()}
+      </View>
     </View>
   );
 }

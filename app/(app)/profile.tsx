@@ -5,24 +5,40 @@ import {
   Dimensions,
   ScrollView,
 } from "react-native";
-import * as Notifications from "expo-notifications";
 import { useAuth } from "../../hooks/useAuth";
 import { useTaskContext } from "@/context/TaskContext";
 import { useMemo, useState } from "react";
 import { LineChart, PieChart } from "react-native-chart-kit";
 import { format, subDays, eachDayOfInterval } from "date-fns";
 import CircularProgress from "react-native-circular-progress-indicator";
+import {
+  importanceColors,
+  importanceLevels,
+  toTitleCase,
+} from "@/utils/constants";
+import { Ionicons } from "@expo/vector-icons";
 
 const screenWidth = Dimensions.get("window").width;
+
+const styles = {
+  headerBg: "bg-primary-800 rounded-b-[30px]",
+  cardBg: "bg-white rounded-xl shadow-sm",
+  statCard: "bg-primary-50 p-4 rounded-xl shadow-sm",
+};
 
 const chartConfig = {
   backgroundGradientFrom: "#ffffff",
   backgroundGradientTo: "#ffffff",
-  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  color: (opacity = 1) => `rgba(126, 34, 206, ${opacity})`, // primary-700
   strokeWidth: 2,
   barPercentage: 0.5,
   useShadowColorFromDataset: false,
   decimalPlaces: 0,
+  propsForLabels: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 8, // Smaller font size
+    rotation: 90, // Vertical rotation
+  },
 };
 
 const chartColors = new Map([
@@ -35,27 +51,37 @@ const chartColors = new Map([
 export default function Profile() {
   const { user, signOut } = useAuth();
   const { tasksByDate } = useTaskContext();
-  const [timeFilter, setTimeFilter] = useState<"week" | "month" | "all">(
-    "week",
+  const [timeFilter, setTimeFilter] = useState<"daily" | "week" | "month">(
+    "daily",
   );
   const [chartType, setChartType] = useState<"circular" | "line">("circular");
 
   const performanceMetrics = useMemo(() => {
     const cutoffDate =
-      timeFilter === "week"
-        ? subDays(new Date(), 7)
-        : timeFilter === "month"
-          ? subDays(new Date(), 30)
-          : new Date(0);
+      timeFilter === "daily"
+        ? new Date() // Today only
+        : timeFilter === "week"
+          ? subDays(new Date(), 7)
+          : subDays(new Date(), 30);
 
     const filteredTasks = Object.entries(tasksByDate)
-      .filter(([date]) => new Date(date) >= cutoffDate)
+      .filter(([date]) => {
+        const taskDate = new Date(date);
+        if (timeFilter === "daily") {
+          // For daily, only include today's tasks
+          return (
+            format(taskDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
+          );
+        }
+        return taskDate >= cutoffDate;
+      })
       .flatMap(([_, tasks]) => tasks);
 
     const totalTasks = filteredTasks.length;
     const completedTasks = filteredTasks.filter(
       (task) => task.completed,
     ).length;
+
     const completionRate =
       totalTasks > 0
         ? parseFloat(((completedTasks / totalTasks) * 100).toFixed(1))
@@ -70,14 +96,14 @@ export default function Profile() {
       {},
     );
 
-    const getDateInterval = (timeFilter: "week" | "month" | "all") => {
+    const getDateInterval = (timeFilter: "daily" | "week" | "month") => {
       switch (timeFilter) {
+        case "daily":
+          return 1;
         case "week":
           return 1;
         case "month":
           return 3;
-        case "all":
-          return 7;
       }
     };
 
@@ -139,17 +165,22 @@ export default function Profile() {
   // Prepare pie chart data
   const pieChartData = Object.entries(
     performanceMetrics.importanceDistribution,
-  ).map(([importance, count]) => ({
-    name: importance,
-    population: count,
-    color: chartColors.get(importance) || "#000",
-    legendFontColor: "#7F7F7F",
-    legendFontSize: 12,
-    percentage:
-      performanceMetrics.totalTasks > 0
-        ? ((count / performanceMetrics.totalTasks) * 100).toFixed(0)
-        : "0",
-  }));
+  ).map(([importance, count]) => {
+    // Get the index of the importance level
+    const importanceIndex = Number(importance); // Since importance is now a number
+
+    return {
+      name: importanceLevels[importanceIndex], // Get the name from importanceLevels
+      population: count,
+      color: importanceColors[importanceIndex], // Get the color from importanceColors
+      legendFontColor: "#475569", // text-slate-600 for better readability
+      legendFontSize: 12,
+      percentage:
+        performanceMetrics.totalTasks > 0
+          ? ((count / performanceMetrics.totalTasks) * 100).toFixed(0)
+          : "0",
+    };
+  });
 
   // Prepare line chart data
   const lineChartData = {
@@ -166,25 +197,39 @@ export default function Profile() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      <View className="p-4">
-        <Text className="text-xl mb-4">Profile</Text>
-        <Text className="mb-4">Email: {user?.email}</Text>
+    <ScrollView className="flex-1 bg-primary-50">
+      {/* Header Section */}
+      <View className={styles.headerBg}>
+        <View className="p-6">
+          <Text className="text-primary-50 font-poppins_600 text-2xl mb-2">
+            Profile
+          </Text>
+          <Text className="text-primary-200 font-poppins_400">
+            {user?.email}
+          </Text>
+        </View>
+      </View>
 
+      <View className="p-4 -mt-4">
         {/* Time Filter Buttons */}
-        <View className="flex-row justify-around mb-4">
-          {["week", "month", "all"].map((filter) => (
+        <View className="bg-white rounded-2xl p-2 flex-row justify-around mb-6 shadow-sm">
+          {(chartType === "circular"
+            ? ["daily", "week", "month"]
+            : ["week", "month"]
+          ).map((filter) => (
             <TouchableOpacity
               key={filter}
-              onPress={() => setTimeFilter(filter as "week" | "month" | "all")}
-              className={`px-4 py-2 rounded ${
-                timeFilter === filter ? "bg-blue-500" : "bg-gray-200"
+              onPress={() =>
+                setTimeFilter(filter as "daily" | "week" | "month")
+              }
+              className={`px-4 py-2 rounded-xl ${
+                timeFilter === filter ? "bg-primary-600" : "bg-primary-50"
               }`}
             >
               <Text
                 className={`${
-                  timeFilter === filter ? "text-white" : "text-gray-600"
-                } capitalize`}
+                  timeFilter === filter ? "text-white" : "text-primary-600"
+                } capitalize font-poppins_500`}
               >
                 {filter}
               </Text>
@@ -193,29 +238,42 @@ export default function Profile() {
         </View>
 
         {/* Chart Type Toggle */}
-        <View className="flex-row justify-around mb-4">
+        <View className="bg-white rounded-2xl p-2 flex-row justify-around mb-6 shadow-sm">
           {["circular", "line"].map((type) => (
             <TouchableOpacity
               key={type}
-              onPress={() => setChartType(type as "circular" | "line")}
-              className={`px-4 py-2 rounded ${
-                chartType === type ? "bg-blue-500" : "bg-gray-200"
+              onPress={() => {
+                if (timeFilter === "daily" && type === "line") {
+                  setTimeFilter("week");
+                }
+                setChartType(type as "circular" | "line");
+              }}
+              className={`px-4 py-2 rounded-xl ${
+                chartType === type ? "bg-primary-600" : "bg-primary-50"
               }`}
             >
-              <Text
-                className={`${
-                  chartType === type ? "text-white" : "text-gray-600"
-                } capitalize`}
-              >
-                {type} View
-              </Text>
+              <View className="flex-row items-center justify-center">
+                {type === "circular" ? (
+                  <Ionicons
+                    name="pie-chart"
+                    size={18}
+                    color={chartType === type ? "#ffffff" : "#7e22ce"}
+                  />
+                ) : (
+                  <Ionicons
+                    name="stats-chart"
+                    size={18}
+                    color={chartType === type ? "#ffffff" : "#7e22ce"}
+                  />
+                )}
+              </View>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Performance Visualization */}
-        <View className="mb-6">
-          <Text className="text-lg font-semibold mb-2 text-center">
+        <View className={`${styles.cardBg} p-6 mb-6`}>
+          <Text className="text-primary-800 font-poppins_600 text-lg mb-4 text-center">
             Performance Overview
           </Text>
           {chartType === "circular" ? (
@@ -224,14 +282,21 @@ export default function Profile() {
                 value={performanceMetrics.averageCompletionRate}
                 radius={80}
                 duration={2000}
-                progressValueColor={"#333"}
+                progressValueColor={"#1e293b"}
                 maxValue={100}
-                title={`${timeFilter}`}
-                titleColor={"#333"}
-                titleStyle={{ fontWeight: "bold", fontSize: 16 }}
-                inActiveStrokeColor={"#2ecc71"}
+                title={
+                  timeFilter === "daily"
+                    ? "Today"
+                    : toTitleCase(timeFilter + "ly")
+                }
+                titleColor={"#7e22ce"}
+                titleStyle={{
+                  fontFamily: "Poppins_600SemiBold",
+                  fontSize: 16,
+                }}
+                inActiveStrokeColor={"#7e22ce"}
                 inActiveStrokeOpacity={0.2}
-                activeStrokeColor={"#2ecc71"}
+                activeStrokeColor={"#7e22ce"}
                 activeStrokeWidth={15}
                 inActiveStrokeWidth={15}
               />
@@ -239,15 +304,9 @@ export default function Profile() {
           ) : (
             <LineChart
               data={lineChartData}
-              width={screenWidth - 32}
+              width={screenWidth - 64}
               height={220}
-              chartConfig={{
-                ...chartConfig,
-                propsForLabels: {
-                  fontSize: 10,
-                  rotation: timeFilter === "week" ? 0 : 45,
-                },
-              }}
+              chartConfig={chartConfig}
               bezier
               style={{
                 marginVertical: 8,
@@ -257,72 +316,87 @@ export default function Profile() {
           )}
         </View>
 
-        {/* Task Distribution Pie Chart */}
-        <View className="mb-6">
-          <Text className="text-lg font-semibold mb-2 text-center">
+        {/* Task Distribution */}
+        <View className={`${styles.cardBg} p-6 mb-6`}>
+          <Text className="text-primary-800 font-poppins_600 text-lg mb-4 text-center">
             Task Distribution
           </Text>
           {performanceMetrics.totalTasks > 0 ? (
             <>
               <PieChart
                 data={pieChartData}
-                width={screenWidth - 32}
+                width={screenWidth - 64}
                 height={200}
-                chartConfig={chartConfig}
+                chartConfig={{
+                  ...chartConfig,
+                  color: (opacity = 1) => `rgba(126, 34, 206, ${opacity})`,
+                }}
                 accessor="population"
                 backgroundColor="transparent"
                 paddingLeft="15"
                 absolute
+                hasLegend={false} // Remove default legend as we're using custom legend
               />
               {/* Custom Legend */}
-              <View className="flex-row justify-around mt-4">
+              <View className="flex-row flex-wrap justify-around mt-4">
                 {pieChartData.map((data) => (
-                  <View key={data.name} className="items-center">
+                  <View key={data.name} className="items-center p-2">
                     <View className="flex-row items-center">
                       <View
-                        style={{
-                          width: 12,
-                          height: 12,
-                          backgroundColor: data.color,
-                          borderRadius: 6,
-                          marginRight: 4,
-                        }}
+                        className="w-3 h-3 rounded-full mr-2"
+                        style={{ backgroundColor: data.color }}
                       />
-                      <Text className="capitalize">{data.name}</Text>
+                      <Text className="capitalize font-poppins_500 text-primary-700">
+                        {data.name.replace("-", " ")}
+                      </Text>
                     </View>
-                    <Text className="text-gray-600">{data.percentage}%</Text>
+                    <Text className="font-poppins_400 text-primary-400">
+                      {data.percentage}%
+                    </Text>
                   </View>
                 ))}
               </View>
             </>
           ) : (
-            <Text className="text-gray-500 text-center">
+            <Text className="text-primary-400 font-poppins_500 text-center">
               No tasks available
             </Text>
           )}
         </View>
 
         {/* Summary Stats */}
-        <View className="bg-gray-100 p-4 rounded-lg mb-6">
-          <Text className="text-lg font-semibold mb-2">Summary</Text>
+        <View className={`${styles.cardBg} p-6 mb-6`}>
+          <Text className="text-primary-800 font-poppins_600 text-lg mb-4">
+            Summary
+          </Text>
           <View className="flex-row justify-between">
-            <View className="items-center">
-              <Text className="text-gray-600">Total Tasks</Text>
-              <Text className="text-2xl font-bold">
+            <View className="items-center bg-primary-50 p-4 rounded-xl flex-1 mr-2">
+              <Text className="text-primary-600 font-poppins_500">
+                Total Tasks
+              </Text>
+              <Text className="text-2xl font-poppins_700 text-primary-800">
                 {performanceMetrics.totalTasks}
               </Text>
             </View>
-            <View className="items-center">
-              <Text className="text-gray-600">Completed</Text>
-              <Text className="text-2xl font-bold">
+            <View className="items-center bg-primary-50 p-4 rounded-xl flex-1 ml-2">
+              <Text className="text-primary-600 font-poppins_500">
+                Completed
+              </Text>
+              <Text className="text-2xl font-poppins_700 text-primary-800">
                 {performanceMetrics.completedTasks}
               </Text>
             </View>
           </View>
         </View>
 
-        <TouchableOpacity onPress={signOut} className="bg-red-500 p-2 rounded">
-          <Text className="text-white text-center">Sign Out</Text>
+        {/* Sign Out Button */}
+        <TouchableOpacity
+          onPress={signOut}
+          className="bg-primary-600 p-4 rounded-xl mb-6"
+        >
+          <Text className="text-white text-center font-poppins_600">
+            Sign Out
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

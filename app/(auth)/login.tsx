@@ -35,62 +35,95 @@ export default function Login() {
   };
 
   return (
-    <View className="flex-1 bg-white p-4">
-      <View className="flex-1 justify-center">
-        <Text className="text-2xl font-bold text-center mb-6">
+    <View className="flex-1 bg-primary-100">
+      {/* Top Design Section - Using deeper colors for header */}
+      <View className="h-2/5 bg-primary-800 rounded-b-[50px] justify-end pb-12 px-6">
+        <Text className="text-primary-50 font-poppins_700 text-4xl mb-2">
           Welcome Back
         </Text>
+        <Text className="text-primary-300 font-poppins_400 text-lg">
+          Let's help you stay organized
+        </Text>
+      </View>
 
-        <View className="space-y-4">
-          <TextInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-          />
-
-          <View className="relative">
+      {/* Login Form Section */}
+      <View className="flex-1 px-6 pt-8">
+        {/* Email Input */}
+        <View className="mb-6">
+          <Text className="text-primary-700 font-poppins_500 mb-2 ml-1">
+            Email
+          </Text>
+          <View className="flex-row items-center bg-white rounded-2xl px-4 shadow-sm border border-primary-200">
+            <Ionicons name="mail-outline" size={20} color="#475569" />
             <TextInput
-              placeholder="Password"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              className="flex-1 p-4 font-poppins_400 text-primary-800 ml-2"
+              placeholderTextColor="#94a3b8"
+            />
+          </View>
+        </View>
+
+        {/* Password Input */}
+        <View className="mb-8">
+          <Text className="text-primary-700 font-poppins_500 mb-2 ml-1">
+            Password
+          </Text>
+          <View className="flex-row items-center bg-white rounded-2xl px-4 shadow-sm border border-primary-200">
+            <Ionicons name="lock-closed-outline" size={20} color="#475569" />
+            <TextInput
+              placeholder="Enter your password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
-              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+              className="flex-1 p-4 font-poppins_400 text-primary-800 ml-2"
+              placeholderTextColor="#94a3b8"
             />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-4"
-            >
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
               <Ionicons
-                name={showPassword ? "eye-off" : "eye"}
-                size={24}
-                color="gray"
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color="#475569"
               />
             </TouchableOpacity>
           </View>
-
-          <TouchableOpacity
-            onPress={handleSignIn}
-            disabled={loading}
-            className="bg-blue-500 p-4 rounded-lg"
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white text-center font-semibold">
-                Sign In
-              </Text>
-            )}
-          </TouchableOpacity>
         </View>
 
-        <View className="flex-row justify-center mt-6">
-          <Text className="text-gray-600">Don't have an account? </Text>
+        {/* Forgot Password */}
+        <TouchableOpacity className="items-end mb-8">
+          <Text className="text-secondary-DEFAULT font-poppins_500">
+            Forgot Password?
+          </Text>
+        </TouchableOpacity>
+
+        {/* Sign In Button - Using accent color for CTA */}
+        <TouchableOpacity
+          onPress={handleSignIn}
+          disabled={loading}
+          className="bg-primary-600 py-4 rounded-2xl shadow-md active:bg-primary-700"
+        >
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text className="text-white text-center font-poppins_600 text-lg">
+              Sign In
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Sign Up Link */}
+        <View className="flex-row justify-center mt-8">
+          <Text className="text-primary-400 font-poppins_400">
+            Don't have an account?
+          </Text>
           <Link href="/register" asChild>
             <TouchableOpacity>
-              <Text className="text-blue-500 font-semibold">Sign Up</Text>
+              <Text className="text-primary-700 font-poppins_600 ml-1">
+                Sign Up
+              </Text>
             </TouchableOpacity>
           </Link>
         </View>
