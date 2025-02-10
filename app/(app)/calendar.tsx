@@ -6,22 +6,11 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Modal,
-  TextInput,
   ActivityIndicator,
-  Keyboard,
-  Platform,
-  KeyboardAvoidingView,
-  Pressable,
-  TouchableWithoutFeedback,
-  PixelRatio,
 } from "react-native";
 import { Calendar as RNCalendar } from "react-native-calendars";
-import { Plus, ChevronDown } from "lucide-react-native";
+import { ChevronDown } from "lucide-react-native";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import { useTaskContext } from "@/context/TaskContext";
 
 type ViewType = "daily" | "weekly" | "monthly";
