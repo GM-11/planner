@@ -11,7 +11,6 @@ import { useMemo, useState } from "react";
 import { LineChart, PieChart } from "react-native-chart-kit";
 import { format, subDays, eachDayOfInterval } from "date-fns";
 import CircularProgress from "react-native-circular-progress-indicator";
-import { Task } from "@/utils/interfaces";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -31,12 +30,14 @@ const chartColors = new Map([
   ["mildly-important", "#eab308"],
   ["less-important", "#22c55e"],
 ]);
+
 export default function Profile() {
   const { user, signOut } = useAuth();
   const { tasksByDate } = useTaskContext();
   const [timeFilter, setTimeFilter] = useState<"week" | "month" | "all">(
     "week",
   );
+  const [chartType, setChartType] = useState<"circular" | "line">("circular");
 
   const performanceMetrics = useMemo(() => {
     const cutoffDate =
@@ -71,30 +72,35 @@ export default function Profile() {
     const getDateInterval = (timeFilter: "week" | "month" | "all") => {
       switch (timeFilter) {
         case "week":
-          return 1; // Show every day
+          return 1;
         case "month":
-          return 3; // Show every 3rd day
+          return 3;
         case "all":
-          return 7; // Show weekly points
+          return 7;
       }
     };
 
-    // Daily completion data for line chart
+    // Daily completion data
     const dailyCompletion = eachDayOfInterval({
       start: cutoffDate,
       end: new Date(),
     }).reduce(
-      (acc: Array<{ date: string; completed: number }>, date, index) => {
+      (
+        acc: Array<{ date: string; completed: number; total: number }>,
+        date,
+        index,
+      ) => {
         const interval = getDateInterval(timeFilter);
         const dateStr = format(date, "yyyy-MM-dd");
         const dayTasks = tasksByDate[dateStr] || [];
         const completed = dayTasks.filter((task) => task.completed).length;
+        const total = dayTasks.length;
 
-        // Only include points at the specified interval
         if (index % interval === 0) {
           acc.push({
             date: format(date, "MMM d"),
             completed,
+            total,
           });
         }
         return acc;
@@ -102,38 +108,56 @@ export default function Profile() {
       [],
     );
 
+    // Calculate average completion rates
+    const averageCompletion = dailyCompletion.reduce(
+      (acc, day) => {
+        if (day.total > 0) {
+          acc.totalRate += (day.completed / day.total) * 100;
+          acc.count += 1;
+        }
+        return acc;
+      },
+      { totalRate: 0, count: 0 },
+    );
+
+    const averageCompletionRate =
+      averageCompletion.count > 0
+        ? averageCompletion.totalRate / averageCompletion.count
+        : 0;
+
     return {
       totalTasks,
       completedTasks,
       completionRate,
       importanceDistribution,
       dailyCompletion,
+      averageCompletionRate,
     };
   }, [tasksByDate, timeFilter]);
 
   // Prepare pie chart data
   const pieChartData = Object.entries(
     performanceMetrics.importanceDistribution,
-  ).map(([importance, count]) => {
-    return {
-      name: importance,
-      population: count, // Note: using 'population' instead of 'count' as it's the required accessor
-      color: chartColors.get(importance) || "#000",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12,
-      percentage:
-        performanceMetrics.totalTasks > 0
-          ? ((count / performanceMetrics.totalTasks) * 100).toFixed(0)
-          : "0",
-    };
-  });
+  ).map(([importance, count]) => ({
+    name: importance,
+    population: count,
+    color: chartColors.get(importance) || "#000",
+    legendFontColor: "#7F7F7F",
+    legendFontSize: 12,
+    percentage:
+      performanceMetrics.totalTasks > 0
+        ? ((count / performanceMetrics.totalTasks) * 100).toFixed(0)
+        : "0",
+  }));
 
   // Prepare line chart data
   const lineChartData = {
     labels: performanceMetrics.dailyCompletion.map((item) => item.date),
     datasets: [
       {
-        data: performanceMetrics.dailyCompletion.map((item) => item.completed),
+        data: performanceMetrics.dailyCompletion.map((item) =>
+          item.total > 0 ? (item.completed / item.total) * 100 : 0,
+        ),
         color: (opacity = 1) => `rgba(54, 162, 235, ${opacity})`,
         strokeWidth: 2,
       },
@@ -165,6 +189,71 @@ export default function Profile() {
               </Text>
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* Chart Type Toggle */}
+        <View className="flex-row justify-around mb-4">
+          {["circular", "line"].map((type) => (
+            <TouchableOpacity
+              key={type}
+              onPress={() => setChartType(type as "circular" | "line")}
+              className={`px-4 py-2 rounded ${
+                chartType === type ? "bg-blue-500" : "bg-gray-200"
+              }`}
+            >
+              <Text
+                className={`${
+                  chartType === type ? "text-white" : "text-gray-600"
+                } capitalize`}
+              >
+                {type} View
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Performance Visualization */}
+        <View className="mb-6">
+          <Text className="text-lg font-semibold mb-2 text-center">
+            Performance Overview
+          </Text>
+          {chartType === "circular" ? (
+            <View className="items-center">
+              <CircularProgress
+                value={performanceMetrics.averageCompletionRate}
+                radius={80}
+                duration={2000}
+                progressValueColor={"#333"}
+                maxValue={100}
+                title={`${timeFilter} average`}
+                titleColor={"#333"}
+                titleStyle={{ fontWeight: "bold" }}
+                inActiveStrokeColor={"#2ecc71"}
+                inActiveStrokeOpacity={0.2}
+                activeStrokeColor={"#2ecc71"}
+                activeStrokeWidth={15}
+                inActiveStrokeWidth={15}
+              />
+            </View>
+          ) : (
+            <LineChart
+              data={lineChartData}
+              width={screenWidth - 32}
+              height={220}
+              chartConfig={{
+                ...chartConfig,
+                propsForLabels: {
+                  fontSize: 10,
+                  rotation: timeFilter === "week" ? 0 : 45,
+                },
+              }}
+              bezier
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+              }}
+            />
+          )}
         </View>
 
         {/* Task Distribution Pie Chart */}
@@ -212,26 +301,6 @@ export default function Profile() {
           )}
         </View>
 
-        {/* Completion Rate Circle */}
-        <View className="items-center mb-6">
-          <Text className="text-lg font-semibold mb-4">Completion Rate</Text>
-          <CircularProgress
-            value={performanceMetrics.completionRate}
-            radius={80}
-            duration={2000}
-            progressValueColor={"#333"}
-            maxValue={100}
-            title={"%"}
-            titleColor={"#333"}
-            titleStyle={{ fontWeight: "bold" }}
-            inActiveStrokeColor={"#2ecc71"}
-            inActiveStrokeOpacity={0.2}
-            activeStrokeColor={"#2ecc71"}
-            activeStrokeWidth={15}
-            inActiveStrokeWidth={15}
-          />
-        </View>
-
         {/* Summary Stats */}
         <View className="bg-gray-100 p-4 rounded-lg mb-6">
           <Text className="text-lg font-semibold mb-2">Summary</Text>
@@ -249,35 +318,6 @@ export default function Profile() {
               </Text>
             </View>
           </View>
-        </View>
-
-        {/* Daily Completion Line Chart */}
-        <View className="mb-6">
-          <Text className="text-lg font-semibold mb-2">
-            Daily Completed Tasks
-          </Text>
-          {performanceMetrics.dailyCompletion.length > 0 ? (
-            <LineChart
-              data={lineChartData}
-              width={screenWidth - 32}
-              height={220}
-              chartConfig={{
-                ...chartConfig,
-                // Add these properties to the chartConfig
-                propsForLabels: {
-                  fontSize: 10,
-                  rotation: timeFilter === "week" ? 0 : 45, // Rotate labels for better readability when showing more points
-                },
-              }}
-              bezier
-              style={{
-                marginVertical: 8,
-                borderRadius: 16,
-              }}
-            />
-          ) : (
-            <Text className="text-gray-500 text-center">No data available</Text>
-          )}
         </View>
 
         <TouchableOpacity onPress={signOut} className="bg-red-500 p-2 rounded">
