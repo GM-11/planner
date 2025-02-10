@@ -8,7 +8,9 @@ import {
   Modal,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
+import * as Notifications from "expo-notifications";
 import { Ionicons } from "@expo/vector-icons";
 import { Task } from "@/utils/interfaces";
 import Slider from "@react-native-community/slider";
@@ -113,12 +115,55 @@ export default function Tasks() {
     loadTasksForDate();
   }, [selectedDate]);
 
-  const getImportanceLevel = (value: number): Task["importance"] => {
-    if (value <= 0.25) return "less-important";
-    if (value <= 0.5) return "mildly-important";
-    if (value <= 0.75) return "important";
-    return "very-important";
-  };
+  useEffect(() => {
+    // Request notification permissions
+    const requestPermissions = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        alert("Please enable notifications to receive task reminders!");
+      }
+    };
+
+    // Get Expo push token
+    const getNotificationToken = async () => {
+      try {
+        const token = await Notifications.getExpoPushTokenAsync();
+        // Store this token with your tasks
+      } catch (error) {
+        console.error("Error getting push token:", error);
+      }
+    };
+
+    requestPermissions();
+    getNotificationToken();
+
+    // Set up notification listeners
+    const notificationListener = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("Notification received:", notification);
+      },
+    );
+
+    const responseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log("Notification response:", response);
+      });
+
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener);
+      Notifications.removeNotificationSubscription(responseListener);
+    };
+  }, []);
+
+  function getImportanceLevel(value: number): string {
+    const levels = [
+      "very-important",
+      "important",
+      "mildly-important",
+      "less-important",
+    ];
+    return levels[Math.round(value)] || levels[0];
+  }
 
   const getImportanceColor = (importance: Task["importance"]): string => {
     switch (importance) {
@@ -190,6 +235,22 @@ export default function Tasks() {
       setTasks(updatedTasks);
       setIsModalVisible(false);
       resetForm();
+
+      const res = Notifications.scheduleNotificationAsync({
+        content: {
+          title: `Task reminder`,
+          interruptionLevel: "active",
+          body: `Time for ${newTask} has started`,
+          data: {
+            taskId: newTaskItem.id,
+          },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: new Date(startTime),
+        },
+      });
+      console.log(res);
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -483,19 +544,28 @@ export default function Tasks() {
               <View className="px-2">
                 <Slider
                   minimumValue={0}
-                  maximumValue={1}
-                  step={0.25}
+                  maximumValue={3}
+                  step={1}
                   value={
-                    [
-                      "very-important",
-                      "important",
-                      "mildly-important",
-                      "less-important",
-                    ].indexOf(importance) / 3
+                    importance === "very-important"
+                      ? 3
+                      : importance === "important"
+                        ? 2
+                        : importance === "mildly-important"
+                          ? 1
+                          : 0
                   }
-                  onValueChange={(value) =>
-                    setImportance(getImportanceLevel(value))
-                  }
+                  onValueChange={(value) => {
+                    const newImportance =
+                      value === 3
+                        ? "very-important"
+                        : value === 2
+                          ? "important"
+                          : value === 1
+                            ? "mildly-important"
+                            : "less-important";
+                    setImportance(newImportance);
+                  }}
                   minimumTrackTintColor={getImportanceColor(importance)}
                   maximumTrackTintColor="#d1d5db"
                   thumbTintColor={getImportanceColor(importance)}
