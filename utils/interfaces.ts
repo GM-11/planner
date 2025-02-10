@@ -5,11 +5,7 @@ export interface Task {
   endTime: string;
   date: string;
   completed: boolean;
-  importance:
-    | "very-important"
-    | "important"
-    | "mildly-important"
-    | "less-important";
+  importance: number;
 }
 export interface User {
   id: string;

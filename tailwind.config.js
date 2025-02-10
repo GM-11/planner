@@ -5,6 +5,26 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      colors: {
+        primary: {
+          50: "#f8fafc",
+          100: "#f1f5f9",
+          200: "#e2e8f0",
+          300: "#cbd5e1",
+          400: "#94a3b8",
+          500: "#64748b", // Main brand color
+          600: "#475569",
+          700: "#334155",
+          800: "#1e293b",
+          900: "#0f172a",
+        },
+        secondary: {
+          DEFAULT: "#3b82f6", // Blue
+        },
+        accent: {
+          DEFAULT: "#10b981", // Emerald
+        },
+      },
       fontFamily: {
         poppins_100: ["Poppins_100Thin"],
         poppins_200: ["Poppins_200ExtraLight"],

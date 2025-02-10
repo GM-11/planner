@@ -7,7 +7,7 @@ interface CompressedTaskData {
   s: string; // start time
   e: string; // end time
   c: boolean; // completed
-  i: string; // importance
+  i: number; // importance
 }
 
 export const taskService = {
