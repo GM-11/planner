@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "516911058445",
+    "firebase_url": "https://n-a-c-39adb.firebaseio.com",
+    "project_id": "n-a-c-39adb",
+    "storage_bucket": "n-a-c-39adb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516911058445:android:7be2a656a5c9a298d38f44",
+        "android_client_info": {
+          "package_name": "com.gm_11.planner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "516911058445-l8rb5dm1bckfc1b4tll3i0j5d7j40d5u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gm_11.planner",
+            "certificate_hash": "623f3e12376157975cae1e4b1357f8f9fe355785"
+          }
+        },
+        {
+          "client_id": "516911058445-uridp4svgl6uihmdj9rh8hd1coa0an17.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFOk456UlQeUiuKgp5TuD3l186eGZtFVc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "516911058445-uridp4svgl6uihmdj9rh8hd1coa0an17.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "516911058445-g2sv5pfhms0g9s1un99lboal6itqh2lj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gosports"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
