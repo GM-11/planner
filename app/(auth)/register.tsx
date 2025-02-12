@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import { Link, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { getExpoPushTokenAsync } from "expo-notifications";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -60,7 +62,7 @@ export default function Register() {
         </View>
 
         {/* Registration Form Section */}
-        <View className="flex-1 px-6 pt-8">
+        <ScrollView className="flex-1 px-6 pt-8">
           {/* Email Input */}
           <View className="mb-6">
             <Text className="text-primary-700 font-poppins_500 mb-2 ml-1">
@@ -158,7 +160,7 @@ export default function Register() {
               </TouchableOpacity>
             </Link>
           </View>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Desktop Design */}

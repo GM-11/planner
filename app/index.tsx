@@ -1,6 +1,6 @@
 import { Redirect } from "expo-router";
 import { useAuth } from "../hooks/useAuth";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef, useState } from "react";
 import { registerForPushNotificationsAsync } from "@/utils/constants";
@@ -10,10 +10,6 @@ export default function Index() {
   const { user, loading } = useAuth();
   const notificationListener = useRef<Notifications.EventSubscription>();
   const responseListener = useRef<Notifications.EventSubscription>();
-  const [expoPushToken, setExpoPushToken] = useState("");
-  const [notification, setNotification] = useState<
-    Notifications.Notification | undefined
-  >(undefined);
 
   useEffect(() => {
     initializeFirebase();
@@ -26,14 +22,7 @@ export default function Index() {
       }),
     });
 
-    registerForPushNotificationsAsync()
-      .then((token) => setExpoPushToken(token ?? ""))
-      .catch((error: any) => setExpoPushToken(`${error}`));
-
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        setNotification(notification);
-      });
+    registerForPushNotificationsAsync();
 
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
@@ -58,8 +47,10 @@ export default function Index() {
     );
   }
 
+  console.log(user);
+
   if (!user) {
-    return <Redirect href="/login" />;
+    return <Redirect href="/(auth)/register" />;
   }
 
   return <Redirect href="/(app)/tasks" />;

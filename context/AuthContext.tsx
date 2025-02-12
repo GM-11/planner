@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from "react";
 import { Alert } from "react-native";
 import { Session, User, AuthError } from "@supabase/supabase-js";
 import { supabase } from "../utils/supabase";
+import { getExpoPushTokenAsync } from "expo-notifications";
 
 interface AuthState {
   user: User | null;
@@ -13,7 +14,6 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (newPassword: string) => Promise<void>;
@@ -69,7 +69,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  // Sign up with email and password
   async function signUp(email: string, password: string) {
     try {
       setState((current) => ({ ...current, loading: true }));
@@ -79,14 +78,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         password,
       });
 
-      console.log(data);
-
       if (error) throw error;
-
-      Alert.alert(
-        "Verification Required",
-        "Please check your email to verify your account",
-      );
     } catch (error) {
       const authError = error as AuthError;
       console.error("Sign up error:", authError);
@@ -97,7 +89,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  // Sign in with email and password
   async function signIn(email: string, password: string) {
     try {
       setState((current) => ({ ...current, loading: true }));
@@ -120,30 +111,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  // Sign in with Google
-  const signInWithGoogle = async () => {
-    try {
-      setState((current) => ({ ...current, loading: true }));
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: "your-app-scheme://auth/callback",
-        },
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      const authError = error as AuthError;
-      console.error("Google sign in error:", authError);
-      Alert.alert("Error", authError.message);
-      throw error;
-    } finally {
-      setState((current) => ({ ...current, loading: false }));
-    }
-  };
-
-  // Sign out
   const signOut = async () => {
     try {
       setState((current) => ({ ...current, loading: true }));
@@ -160,7 +127,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Forgot password
   const forgotPassword = async (email: string) => {
     try {
       setState((current) => ({ ...current, loading: true }));
@@ -185,7 +151,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Reset password
   const resetPassword = async (newPassword: string) => {
     try {
       setState((current) => ({ ...current, loading: true }));
@@ -207,7 +172,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Update user profile
   const updateProfile = async (data: {
     full_name?: string;
     avatar_url?: string;
@@ -243,7 +207,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ...state,
         signUp,
         signIn,
-        signInWithGoogle,
         signOut,
         forgotPassword,
         resetPassword,

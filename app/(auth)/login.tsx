@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import { Link, router } from "expo-router";
@@ -17,7 +18,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { signIn } = useAuth();
+  const { signIn, forgotPassword } = useAuth();
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -49,7 +50,7 @@ export default function Login() {
         </View>
 
         {/* Login Form Section */}
-        <View className="flex-1 px-6 pt-8">
+        <ScrollView className="flex-1 px-6 pt-8">
           {/* Email Input */}
           <View className="mb-6">
             <Text className="text-primary-700 font-poppins_500 mb-2 ml-1">
@@ -95,7 +96,10 @@ export default function Login() {
           </View>
 
           {/* Forgot Password */}
-          <TouchableOpacity className="items-end mb-8">
+          <TouchableOpacity
+            onPress={() => forgotPassword(email)}
+            className="items-end mb-8"
+          >
             <Text className="text-secondary-DEFAULT font-poppins_500">
               Forgot Password?
             </Text>
@@ -129,7 +133,7 @@ export default function Login() {
               </TouchableOpacity>
             </Link>
           </View>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Desktop Design */}
@@ -200,7 +204,10 @@ export default function Login() {
             </View>
 
             {/* Forgot Password */}
-            <TouchableOpacity className="items-end mb-8">
+            <TouchableOpacity
+              onPress={() => forgotPassword(email)}
+              className="items-end mb-8"
+            >
               <Text className="text-secondary-DEFAULT font-poppins_500">
                 Forgot Password?
               </Text>
