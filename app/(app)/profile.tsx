@@ -5,6 +5,7 @@ import {
   Dimensions,
   ScrollView,
   Platform,
+  Linking,
 } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import { useTaskContext } from "@/context/TaskContext";
@@ -51,6 +52,30 @@ const chartConfig = {
     rotation: 90,
   },
 };
+
+const Footer = () => (
+  <View className="bg-primary-800/90 p-2 lg:rounded-lg lg:ml-[300px] lg:mb-4 lg:mr-4">
+    <View className="max-w-7xl mx-auto">
+      <Text className="text-center text-primary-100 font-poppins_400 text-sm">
+        <Text>Built with ❤️ • </Text>
+        <Text
+          className="underline"
+          onPress={() => {
+            if (Platform.OS === "web") {
+              window.open("https://github.com/GM-11/planner", "_blank");
+            } else {
+              // For mobile platforms
+              Linking.openURL("https://github.com/GM-11/planner");
+            }
+          }}
+        >
+          Source Code
+        </Text>
+      </Text>
+    </View>
+  </View>
+);
+
 export default function Profile() {
   const { user, signOut } = useAuth();
   const { tasksByDate } = useTaskContext();
@@ -406,6 +431,7 @@ export default function Profile() {
               </Text>
             </TouchableOpacity>
           </View>
+          <Footer />
         </ScrollView>
       </View>
 
@@ -503,6 +529,7 @@ export default function Profile() {
                 {renderCharts(true)}
               </View>
             </View>
+            <Footer />
           </ScrollView>
         </View>
       </View>
