@@ -60,7 +60,9 @@ class _FilterButton extends StatelessWidget {
     return Material(
       color:
           isSelected
-              ? Colors.white.withAlpha(25)
+              ? isDesktop
+                  ? Colors.white.withAlpha(25)
+                  : Theme.of(context).primaryColor
               : isDesktop
               ? Theme.of(context).primaryColor
               : Theme.of(context).primaryColor.withAlpha(25),
