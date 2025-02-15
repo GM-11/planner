@@ -79,7 +79,7 @@ class _DesktopLayout extends ConsumerWidget {
         children: [
           // Sidebar
           Container(
-            width: 300,
+            width: 400,
             color: Theme.of(context).primaryColor,
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -165,7 +165,8 @@ Widget _buildDesktopViewTypeSelector(
   BuildContext context,
   CalendarViewType viewType,
 ) {
-  return Column(
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
     children: [
       for (final type in CalendarViewType.values) ...[
         if (CalendarViewType.values.indexOf(type) > 0)
@@ -206,7 +207,7 @@ class _ViewTypeButton extends ConsumerWidget {
     return Material(
       color:
           isSelected
-              ? (isDesktop ? Colors.white : Colors.white.withAlpha(25))
+              ? Colors.white.withAlpha(25)
               : (isDesktop
                   ? Colors.transparent
                   : Theme.of(context).primaryColor),
@@ -217,7 +218,6 @@ class _ViewTypeButton extends ConsumerWidget {
         },
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          width: isDesktop ? double.infinity : null,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
             switch (type) {
@@ -229,10 +229,8 @@ class _ViewTypeButton extends ConsumerWidget {
             style: TextStyle(
               color:
                   isDesktop
-                      ? (isSelected
-                          ? Theme.of(context).primaryColor
-                          : Colors.white70)
-                      : Colors.white.withOpacity(isSelected ? 1.0 : 0.7),
+                      ? Colors.white70
+                      : Colors.white.withAlpha(isSelected ? 255 : 178),
               fontSize: 14,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             ),

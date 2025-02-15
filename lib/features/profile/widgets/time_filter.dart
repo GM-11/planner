@@ -60,10 +60,10 @@ class _FilterButton extends StatelessWidget {
     return Material(
       color:
           isSelected
-              ? Theme.of(context).primaryColor
+              ? Colors.white.withAlpha(25)
               : isDesktop
-              ? Colors.white.withOpacity(0.1)
-              : Theme.of(context).primaryColor.withOpacity(0.1),
+              ? Theme.of(context).primaryColor
+              : Theme.of(context).primaryColor.withAlpha(25),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,

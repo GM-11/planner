@@ -257,7 +257,7 @@ class _WeeklyTimeGridState extends ConsumerState<_WeeklyTimeGrid> {
         (hour) => Container(
           height: 80,
           decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            border: Border(top: BorderSide(color: Colors.grey.shade400)),
           ),
           child: Row(
             children: [
@@ -289,7 +289,7 @@ class _WeeklyTimeGridState extends ConsumerState<_WeeklyTimeGrid> {
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border(
-                          left: BorderSide(color: Colors.grey.shade200),
+                          left: BorderSide(color: Colors.grey.shade400),
                         ),
                       ),
                     ),

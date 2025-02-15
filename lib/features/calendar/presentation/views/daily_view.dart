@@ -131,7 +131,7 @@ class _TimeGridState extends ConsumerState<TimeGrid> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                  border: Border(top: BorderSide(color: Colors.grey.shade400)),
                 ),
               ),
             ),

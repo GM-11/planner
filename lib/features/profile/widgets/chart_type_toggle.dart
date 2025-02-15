@@ -21,27 +21,27 @@ class ChartTypeToggle extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children:
-      ChartType.values.map((type) {
-        final isSelected = currentType == type;
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _ChartTypeButton(
-              type: type,
-              isSelected: isSelected,
-              onTap: () {
-                if (timeFilter == TimeFilter.daily &&
-                    type == ChartType.line) {
-                  ref.read(timeFilterProvider.notifier).state =
-                      TimeFilter.week;
-                }
-                onChanged(type);
-              },
-              isDesktop: isDesktop,
-            ),
-          ),
-        );
-      }).toList(),
+          ChartType.values.map((type) {
+            final isSelected = currentType == type;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _ChartTypeButton(
+                  type: type,
+                  isSelected: isSelected,
+                  onTap: () {
+                    if (timeFilter == TimeFilter.daily &&
+                        type == ChartType.line) {
+                      ref.read(timeFilterProvider.notifier).state =
+                          TimeFilter.week;
+                    }
+                    onChanged(type);
+                  },
+                  isDesktop: isDesktop,
+                ),
+              ),
+            );
+          }).toList(),
     );
   }
 }
@@ -63,11 +63,11 @@ class _ChartTypeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color:
-      isSelected
-          ? Theme.of(context).primaryColor
-          : isDesktop
-          ? Colors.white.withOpacity(0.1)
-          : Theme.of(context).primaryColor.withOpacity(0.1),
+          isSelected
+              ? Colors.white.withAlpha(25)
+              : isDesktop
+              ? Theme.of(context).primaryColor
+              : Theme.of(context).primaryColor.withAlpha(25),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -82,11 +82,11 @@ class _ChartTypeButton extends StatelessWidget {
                     ? Ionicons.pie_chart
                     : Ionicons.stats_chart,
                 color:
-                isSelected
-                    ? Colors.white
-                    : isDesktop
-                    ? Colors.white70
-                    : Theme.of(context).primaryColor,
+                    isSelected
+                        ? Colors.white
+                        : isDesktop
+                        ? Colors.white70
+                        : Theme.of(context).primaryColor,
                 size: 18,
               ),
               if (isDesktop) ...[

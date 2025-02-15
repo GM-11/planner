@@ -197,7 +197,7 @@ class _DesktopLayout extends ConsumerWidget {
 
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: ProfileDateNavigator(),
+                  child: ProfileDateNavigator(isDesktop: true),
                 ),
                 const SizedBox(height: 32),
 
