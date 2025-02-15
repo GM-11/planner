@@ -48,3 +48,5 @@ app.*.map.json
 
 build.sh
 google-services.json
+Planner.AppDir
+appimagetool-x86_64.AppImage
