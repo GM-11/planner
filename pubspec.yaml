@@ -137,6 +137,10 @@ flutter_native_splash:
 flutter_launcher_icons:
   android: true
   ios: true
+  web:
+    generate: true
+    image_path: "assets/logo.png"
+    icon_size: 48
   image_path: "assets/logo.png"
   min_sdk_android: 21
   adaptive_icon_background: "#6D28D9"
