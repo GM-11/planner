@@ -1,0 +1,14 @@
+flutter_app:
+  command: planner
+  exec: /usr/local/lib/planner/planner # Ensure correct path
+  arch: x64
+  parent: /usr/local/lib/planner
+  nonInteractive: false
+
+control:
+  Package: planner
+  Version: 1.0.0
+  Architecture: amd64
+  Priority: optional
+  Depends:
+  Description: Your Task Management app!

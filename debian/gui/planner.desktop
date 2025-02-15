@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=Planner
+GenericName=Planner
+Comment=Task Management and Planning App
+Terminal=false
+Icon=/home/gm11/codes/planner/debian/gui/planner.png
+Type=Application
+Categories=Utility
+Keywords=Planner;tasks;
