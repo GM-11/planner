@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ionicons/ionicons.dart';
@@ -95,7 +97,7 @@ class _AddTaskModalState extends ConsumerState<AddTaskModal> {
       completed: false,
       importance: _importance,
     );
-
+    log("addnig");
     widget.onAdd(task);
     Navigator.pop(context);
   }

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:planner/features/tasks/presentation/add_task_modal.dart'
-    show AddTaskModal;
-import 'package:planner/features/tasks/presentation/tasks_shimmer.dart'
-    show TasksShimmer;
+import 'package:planner/features/tasks/presentation/add_task_modal.dart';
+import 'package:planner/features/tasks/presentation/tasks_shimmer.dart';
 import 'package:planner/shared/constant.dart';
 import '../../../shared/models/task.dart';
 import '../../../shared/widgets/date_navigator.dart';
@@ -18,31 +16,6 @@ class TasksScreen extends ConsumerStatefulWidget {
 }
 
 class _TasksScreenState extends ConsumerState<TasksScreen> {
-  String _sortType = 'time';
-  String _sortDirection = 'asc';
-  // bool _showAddTaskModal = false;
-
-  List<Task> _getSortedTasks(List<Task> tasks) {
-    return tasks..sort((a, b) {
-      if (_sortType == 'time') {
-        final comparison = a.startTime.compareTo(b.startTime);
-        return _sortDirection == 'asc' ? comparison : -comparison;
-      } else {
-        final comparison = b.importance.compareTo(a.importance);
-        return _sortDirection == 'asc' ? -comparison : comparison;
-      }
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Initial load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(tasksStateProvider);
-    });
-  }
-
   void _showAddTaskSheet() {
     showDialog(
       context: context,
@@ -92,7 +65,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(tasksStateProvider);
+        ref.invalidate(tasksForDateProvider);
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -115,14 +88,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(selectedDateProvider);
-    final tasksAsync = ref.watch(tasksForDateProvider);
+    final sortedTasksAsync = ref.watch(sortedTasksProvider);
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
 
     return Scaffold(
       body:
           isDesktop
-              ? _buildDesktopLayout(context, selectedDate, tasksAsync)
-              : _buildMobileLayout(context, selectedDate, tasksAsync),
+              ? _buildDesktopLayout(context, selectedDate, sortedTasksAsync)
+              : _buildMobileLayout(context, selectedDate, sortedTasksAsync),
       floatingActionButton:
           !isDesktop
               ? FloatingActionButton(
@@ -135,6 +108,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   }
 
   Widget _buildSortControls({bool isDark = false}) {
+    final sorting = ref.watch(taskSortingProvider);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       child: Row(
@@ -152,19 +127,25 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
             children: [
               _buildSortChip(
                 title: 'Time',
-                isSelected: _sortType == 'time',
-                onTap: () => setState(() => _sortType = 'time'),
+                isSelected: sorting.type == 'time',
+                onTap:
+                    () =>
+                        ref.read(taskSortingProvider.notifier).state = sorting
+                            .copyWith(type: 'time'),
                 isDark: isDark,
               ),
               const SizedBox(width: 8),
               _buildSortChip(
                 title: 'Priority',
-                isSelected: _sortType == 'importance',
-                onTap: () => setState(() => _sortType = 'importance'),
+                isSelected: sorting.type == 'importance',
+                onTap:
+                    () =>
+                        ref.read(taskSortingProvider.notifier).state = sorting
+                            .copyWith(type: 'importance'),
                 isDark: isDark,
               ),
               const SizedBox(width: 8),
-              _buildOrderButton(isDark: isDark),
+              _buildOrderButton(sorting: sorting, isDark: isDark),
             ],
           ),
         ],
@@ -208,12 +189,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     );
   }
 
-  Widget _buildOrderButton({required bool isDark}) {
+  Widget _buildOrderButton({required TaskSort sorting, required bool isDark}) {
     return InkWell(
       onTap:
-          () => setState(
-            () => _sortDirection = _sortDirection == 'asc' ? 'desc' : 'asc',
-          ),
+          () =>
+              ref.read(taskSortingProvider.notifier).state = sorting.copyWith(
+                ascending: !sorting.ascending,
+              ),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(8),
@@ -225,7 +207,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           shape: BoxShape.circle,
         ),
         child: Icon(
-          _sortDirection == 'asc' ? Ionicons.arrow_up : Ionicons.arrow_down,
+          sorting.ascending ? Ionicons.arrow_up : Ionicons.arrow_down,
           color: isDark ? Colors.white70 : Colors.black87,
         ),
       ),
@@ -271,6 +253,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     DateTime selectedDate,
     AsyncValue<List<Task>> tasksAsync,
   ) {
+    final sorting = ref.watch(taskSortingProvider);
+
     return Row(
       children: [
         // Left sidebar
@@ -316,27 +300,36 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     const SizedBox(height: 16),
                     _buildSortButton(
                       title: 'Time',
-                      isSelected: _sortType == 'time',
-                      onTap: () => setState(() => _sortType = 'time'),
+                      isSelected: sorting.type == 'time',
+                      onTap:
+                          () =>
+                              ref
+                                  .read(taskSortingProvider.notifier)
+                                  .state = sorting.copyWith(type: 'time'),
                     ),
                     const SizedBox(height: 8),
                     _buildSortButton(
                       title: 'Priority',
-                      isSelected: _sortType == 'importance',
-                      onTap: () => setState(() => _sortType = 'importance'),
+                      isSelected: sorting.type == 'importance',
+                      onTap:
+                          () =>
+                              ref
+                                  .read(taskSortingProvider.notifier)
+                                  .state = sorting.copyWith(type: 'importance'),
                     ),
                     const SizedBox(height: 8),
                     _buildSortButton(
                       title: 'Order',
                       isSelected: false,
                       onTap:
-                          () => setState(
-                            () =>
-                                _sortDirection =
-                                    _sortDirection == 'asc' ? 'desc' : 'asc',
-                          ),
+                          () =>
+                              ref
+                                  .read(taskSortingProvider.notifier)
+                                  .state = sorting.copyWith(
+                                ascending: !sorting.ascending,
+                              ),
                       trailing: Icon(
-                        _sortDirection == 'asc'
+                        sorting.ascending
                             ? Ionicons.arrow_up
                             : Ionicons.arrow_down,
                         color: Colors.white70,
@@ -384,9 +377,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               ),
               Expanded(
                 child: tasksAsync.when(
-                  data: (tasks) => _buildTasksList(_getSortedTasks(tasks)),
-                  loading: () => TasksShimmer(isDesktop: true),
-
+                  data: (tasks) => _buildTasksList(tasks),
+                  loading: () => const TasksShimmer(isDesktop: true),
                   error:
                       (error, stack) =>
                           Center(child: Text('Error: ${error.toString()}')),
@@ -409,7 +401,6 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         // Header section with purple background
         Container(
           height: 200,
-
           decoration: BoxDecoration(
             color: Theme.of(context).primaryColor,
             borderRadius: const BorderRadius.only(
@@ -435,7 +426,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         // Tasks list
         Expanded(
           child: tasksAsync.when(
-            data: (tasks) => _buildTasksList(_getSortedTasks(tasks)),
+            data: (tasks) => _buildTasksList(tasks),
             loading: () => const TasksShimmer(isDesktop: false),
             error:
                 (error, stack) =>
@@ -447,7 +438,6 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   }
 }
 
-// Task Card Widget
 class _TaskCard extends StatelessWidget {
   final Task task;
   final VoidCallback onToggle;
@@ -457,7 +447,8 @@ class _TaskCard extends StatelessWidget {
     required this.task,
     required this.onToggle,
     required this.onDelete,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
