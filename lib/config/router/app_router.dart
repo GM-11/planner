@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:planner/features/journals/presentation/journal_editor_screen.dart';
+import 'package:planner/features/journals/presentation/journals_screen.dart';
 import 'package:planner/features/profile/presentation/profile_screen.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -9,6 +11,7 @@ import '../../features/auth/presentation/register_screen.dart';
 import '../../features/calendar/presentation/calendar_screen.dart'
     show CalendarScreen;
 import '../../features/tasks/presentation/tasks_screen.dart' show TasksScreen;
+import '../../shared/models/journal.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -58,6 +61,21 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const CalendarScreen(),
           ),
           GoRoute(
+            path: '/journals',
+            builder: (context, state) => const JournalsScreen(),
+          ),
+          GoRoute(
+            path: '/journals/new',
+            builder: (context, state) => const JournalEditorScreen(),
+          ),
+          GoRoute(
+            path: '/journals/:id',
+            builder: (context, state) {
+              final journal = state.extra as Journal?;
+              return JournalEditorScreen(journal: journal);
+            },
+          ),
+          GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfileScreen(),
           ),
@@ -92,6 +110,11 @@ class ScaffoldWithBottomNavBar extends StatelessWidget {
             label: 'Calendar',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Ionicons.book_outline),
+            activeIcon: Icon(Ionicons.book),
+            label: 'Journals',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Ionicons.person_outline),
             activeIcon: Icon(Ionicons.person),
             label: 'Profile',
@@ -105,7 +128,8 @@ class ScaffoldWithBottomNavBar extends StatelessWidget {
     final String location = GoRouterState.of(context).uri.toString();
     if (location.startsWith('/tasks')) return 0;
     if (location.startsWith('/calendar')) return 1;
-    if (location.startsWith('/profile')) return 2;
+    if (location.startsWith('/journals')) return 2;
+    if (location.startsWith('/profile')) return 3;
     return 0;
   }
 
@@ -118,6 +142,9 @@ class ScaffoldWithBottomNavBar extends StatelessWidget {
         GoRouter.of(context).go('/calendar');
         break;
       case 2:
+        GoRouter.of(context).go('/journals');
+        break;
+      case 3:
         GoRouter.of(context).go('/profile');
         break;
     }
