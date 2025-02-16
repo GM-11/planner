@@ -508,7 +508,7 @@ class _TaskCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: onDelete,
+                  onPressed: () => _showDeleteConfirmationDialog(context),
                   icon: Icon(
                     Ionicons.trash_outline,
                     color: Colors.red[400],
@@ -542,6 +542,46 @@ class _TaskCard extends StatelessWidget {
           task.completed
               ? const Icon(Icons.check, size: 16, color: Colors.white)
               : null,
+    );
+  }
+
+  Future<void> _showDeleteConfirmationDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Task'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Are you sure you want to delete "${task.text}"?'),
+                const SizedBox(height: 8),
+                const Text(
+                  'This action cannot be undone.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                onDelete();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
