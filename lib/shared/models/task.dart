@@ -1,5 +1,3 @@
-import 'package:planner/shared/services/supabase_service.dart';
-
 class Task {
   final String? id; // Change to String type
   final String text;

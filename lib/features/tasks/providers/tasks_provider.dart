@@ -11,7 +11,6 @@ final selectedDateProvider = StateProvider<DateTime>((ref) => DateTime.now());
 // Main tasks state provider
 final tasksStateProvider = FutureProvider.autoDispose<List<Task>>((ref) async {
   final repository = ref.watch(tasksRepositoryProvider);
-  final cacheKey = ref.watch(_tasksCacheKeyProvider);
 
   // Use cache key to invalidate cache when needed
   ref.keepAlive();
@@ -30,7 +29,7 @@ final tasksForDateProvider = FutureProvider.autoDispose<List<Task>>((
 });
 
 // Cache key provider for managing cache invalidation
-final _tasksCacheKeyProvider = StateProvider<int>((ref) => 0);
+// final _tasksCacheKeyProvider = StateProvider<int>((ref) => 0);
 
 // Task operations provider
 final taskOperationsProvider = Provider((ref) {
@@ -76,9 +75,6 @@ class TaskOperations {
   }
 
   void _invalidateCache() {
-    // Increment cache key to invalidate all cached data
-    _ref.read(_tasksCacheKeyProvider.notifier).state++;
-    // Invalidate current date's tasks
     _ref.invalidate(tasksStateProvider);
     _ref.invalidate(tasksForDateProvider);
   }
