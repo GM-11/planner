@@ -139,6 +139,8 @@ class TasksRepository {
           'data': [taskData],
         });
       }
+
+      scheduleNotifiction(task, _supabase, userId);
     } catch (e) {
       log('Error adding task: $e');
       rethrow;
