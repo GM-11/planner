@@ -28,14 +28,12 @@ class JournalSearchBar extends ConsumerWidget {
           hintStyle: TextStyle(
             color: isDesktop ? Colors.grey : Theme.of(context).primaryColor,
           ),
+
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          prefixIcon: Icon(
-            Icons.search,
-            color: isDesktop ? Colors.grey : Colors.white60,
-          ),
+          prefixIcon: Icon(Icons.search, color: Colors.grey),
         ),
-        style: TextStyle(color: isDesktop ? Colors.black87 : Colors.white),
+        style: TextStyle(color: Colors.black87),
       ),
     );
   }

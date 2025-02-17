@@ -1,24 +1,40 @@
 import 'dart:developer';
 import 'package:encrypt/encrypt.dart';
-import './storage_service.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
+
+import '../../../shared/services/supabase_service.dart';
 
 class EncryptionService {
-  static const _keyStorageKey = 'encryption_key';
-  static final _storage = StorageService();
+  static String deriveKeyFromUserId(String userId) {
+    // Use SHA-256 to create a deterministic 32-byte key from the userId
+    final bytes = utf8.encode(userId);
+    final hash = sha256.convert(bytes);
+    // Convert to base64 for the AES key
+    return base64.encode(hash.bytes);
+  }
 
-  static Future<String> getOrCreateKey() async {
-    String? key = await _storage.read(_keyStorageKey);
-    if (key == null) {
-      key = Key.fromSecureRandom(32).base64;
-      await _storage.write(_keyStorageKey, key);
-      log('Created new encryption key: $key');
+  static String getCurrentUserId() {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('No authenticated user found');
     }
-    return key;
+    return userId;
+  }
+
+  static Future<String> getKey() async {
+    try {
+      final userId = getCurrentUserId();
+      return deriveKeyFromUserId(userId);
+    } catch (e) {
+      log('Error getting encryption key: $e');
+      rethrow;
+    }
   }
 
   static Future<String> encrypt(String text) async {
     try {
-      final key = await getOrCreateKey();
+      final key = await getKey();
       final encrypter = Encrypter(AES(Key.fromBase64(key)));
       final iv = IV.fromSecureRandom(16);
       final encrypted = encrypter.encrypt(text, iv: iv);
@@ -31,13 +47,12 @@ class EncryptionService {
 
   static Future<String> decrypt(String encryptedText) async {
     try {
-      // Check if the text is actually encrypted
       if (!isEncrypted(encryptedText)) {
         log('Text is not encrypted: $encryptedText');
         return encryptedText;
       }
 
-      final key = await getOrCreateKey();
+      final key = await getKey();
       final encrypter = Encrypter(AES(Key.fromBase64(key)));
 
       final parts = encryptedText.split(':');
@@ -53,7 +68,7 @@ class EncryptionService {
       return decrypted;
     } catch (e) {
       log('Decryption error: $e');
-      return encryptedText; // Return original text if decryption fails
+      return encryptedText;
     }
   }
 
