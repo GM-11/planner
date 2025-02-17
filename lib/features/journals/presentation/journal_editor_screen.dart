@@ -99,7 +99,8 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
       }
 
       if (mounted) {
-        context.pop();
+        setState(() => _hasChanges = false); // Clear the changes flag
+        context.pop(); // Remove the boolean parameter
       }
     } catch (e) {
       if (mounted) {

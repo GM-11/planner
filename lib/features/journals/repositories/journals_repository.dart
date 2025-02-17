@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/models/journal.dart';
 import '../../../shared/services/supabase_service.dart';
@@ -19,16 +21,35 @@ class JournalsRepository {
 
       return Future.wait(
         response.map((journal) async {
-          final decryptedContent = await EncryptionService.decrypt(
-            journal['encrypted_content'],
-          );
+          String decryptedContent;
+          try {
+            // Make sure we're getting the encrypted content from the database
+            final encryptedContent = journal['encrypted_content'] as String;
+
+            // Attempt to decrypt the content
+            decryptedContent = await EncryptionService.decrypt(
+              encryptedContent,
+            );
+
+            // Log for debugging
+            log('Original content: $encryptedContent');
+            log('Decrypted content: $decryptedContent');
+          } catch (e) {
+            log('Decryption error: $e');
+            decryptedContent = journal['encrypted_content']; // Fallback
+          }
+
           return Journal.fromJson({
-            ...journal,
-            'encrypted_content': decryptedContent,
+            'id': journal['id'],
+            'user_id': journal['user_id'],
+            'created_at': journal['created_at'],
+            'updated_at': journal['updated_at'],
+            'encrypted_content': decryptedContent, // Use the decrypted content
           });
         }).toList(),
       );
     } catch (e) {
+      log('Error fetching journals: $e');
       rethrow;
     }
   }
@@ -36,7 +57,11 @@ class JournalsRepository {
   Future<Journal> addJournal(String content) async {
     try {
       final userId = _supabase.auth.currentUser!.id;
+      // Encrypt the content before saving
       final encryptedContent = await EncryptionService.encrypt(content);
+
+      log('Adding journal - Original: $content');
+      log('Adding journal - Encrypted: $encryptedContent');
 
       final response =
           await _supabase
@@ -48,15 +73,25 @@ class JournalsRepository {
               .select()
               .single();
 
-      return Journal.fromJson({...response, 'encrypted_content': content});
+      // Return the journal with decrypted content
+      return Journal.fromJson({
+        ...response,
+        'encrypted_content':
+            content, // Use original content for the returned object
+      });
     } catch (e) {
+      log('Error adding journal: $e');
       rethrow;
     }
   }
 
   Future<Journal> updateJournal(Journal journal, String newContent) async {
     try {
+      // Encrypt the new content
       final encryptedContent = await EncryptionService.encrypt(newContent);
+
+      log('Updating journal - Original: $newContent');
+      log('Updating journal - Encrypted: $encryptedContent');
 
       final response =
           await _supabase
@@ -69,8 +104,14 @@ class JournalsRepository {
               .select()
               .single();
 
-      return Journal.fromJson({...response, 'encrypted_content': newContent});
+      // Return the journal with decrypted content
+      return Journal.fromJson({
+        ...response,
+        'encrypted_content':
+            newContent, // Use the new content for the returned object
+      });
     } catch (e) {
+      log('Error updating journal: $e');
       rethrow;
     }
   }
