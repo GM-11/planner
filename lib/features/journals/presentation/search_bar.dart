@@ -12,7 +12,7 @@ class JournalSearchBar extends ConsumerWidget {
     return Container(
       constraints: const BoxConstraints(maxHeight: 48),
       decoration: BoxDecoration(
-        color: isDesktop ? Colors.white : Colors.white.withOpacity(0.1),
+        color: isDesktop ? Colors.white : Colors.white70,
         borderRadius: BorderRadius.circular(12),
         border:
             isDesktop
@@ -25,7 +25,9 @@ class JournalSearchBar extends ConsumerWidget {
         },
         decoration: InputDecoration(
           hintText: 'Search journals...',
-          hintStyle: TextStyle(color: isDesktop ? Colors.grey : Colors.white60),
+          hintStyle: TextStyle(
+            color: isDesktop ? Colors.grey : Theme.of(context).primaryColor,
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           prefixIcon: Icon(

@@ -31,6 +31,8 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
   }
 
   void _onTextChanged() {
+    if (!mounted) return;
+
     final hasChanges =
         widget.journal != null
             ? _contentController.text != widget.journal!.encryptedContent
@@ -120,10 +122,11 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
 
   Widget _buildMobileLayout() {
     return PopScope(
-      onPopInvokedWithResult: (bool t, _) {
-        _onWillPop().then((canPop) {
-          if (canPop) context.pop(t);
-        });
+      onPopInvokedWithResult: (bool t, _) async {
+        final canPop = await _onWillPop();
+        if (canPop && mounted) {
+          context.pop(t);
+        }
       },
       child: Scaffold(
         appBar: AppBar(
@@ -138,15 +141,39 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
           child: Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [_buildContentField()],
-                  ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: TextField(
+                            controller: _contentController,
+                            maxLines: null,
+                            keyboardType: TextInputType.multiline,
+                            decoration: InputDecoration(
+                              hintText: 'Write your thoughts...',
+                              contentPadding: const EdgeInsets.all(16),
+                              border: InputBorder.none,
+                              fillColor: Colors.transparent,
+                              filled: true,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                            ),
+                            style: const TextStyle(fontSize: 16, height: 1.6),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-              _buildBottomBar(),
+              _buildBottomBar(false),
             ],
           ),
         ),
@@ -214,28 +241,15 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
                       ),
                     ],
                     const Spacer(),
-                    _buildBottomBar(),
+                    _buildBottomBar(true),
                   ],
                 ),
               ),
 
-              // Main content
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(48),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 800),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // _buildTitleAndDate(),
-                          // const SizedBox(height: 32),
-                          Expanded(child: _buildContentField()),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildContentField(),
                 ),
               ),
             ],
@@ -246,27 +260,29 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
   }
 
   Widget _buildContentField() {
-    return TextFormField(
-      controller: _contentController,
-      maxLines: null,
-      expands: true,
-      decoration: InputDecoration(
-        hintText: 'Write your thoughts...',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).primaryColor),
-        ),
-        contentPadding: const EdgeInsets.all(16),
-      ),
-      style: const TextStyle(fontSize: 16, height: 1.6),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: TextField(
+              controller: _contentController,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              decoration: InputDecoration(
+                hintText: 'Write your thoughts...',
+                contentPadding: const EdgeInsets.all(16),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+              ),
+              style: const TextStyle(fontSize: 16, height: 1.6),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -289,9 +305,9 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(bool isDesktop) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Row(
         children: [
           Expanded(
@@ -305,8 +321,14 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                side: const BorderSide(color: Colors.white),
-                foregroundColor: Colors.white,
+                side: BorderSide(
+                  color:
+                      isDesktop
+                          ? Colors.white70
+                          : Theme.of(context).primaryColor,
+                ),
+                foregroundColor:
+                    isDesktop ? Colors.white70 : Theme.of(context).primaryColor,
               ),
               child: const Text('Cancel'),
             ),

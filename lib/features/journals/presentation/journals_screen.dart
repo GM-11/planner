@@ -4,6 +4,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:planner/features/journals/presentation/journal_shimmer.dart';
 import 'package:planner/features/journals/presentation/search_bar.dart';
 import 'package:planner/shared/models/journal.dart';
 import '../providers/journals_provider.dart';
@@ -88,7 +89,7 @@ class _MobileLayout extends ConsumerWidget {
                     ),
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const JournalsShimmer(),
                 error:
                     (error, stack) => Center(
                       child: Column(
@@ -235,8 +236,7 @@ class _DesktopLayout extends ConsumerWidget {
                         },
                       );
                     },
-                    loading:
-                        () => const Center(child: CircularProgressIndicator()),
+                    loading: () => const JournalsShimmer(isDesktop: true),
                     error:
                         (error, stack) => Center(
                           child: Column(
