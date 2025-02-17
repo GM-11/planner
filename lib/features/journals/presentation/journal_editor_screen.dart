@@ -135,6 +135,13 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
             widget.journal != null ? 'Edit Entry' : 'New Entry',
             style: const TextStyle(color: Colors.white),
           ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed:
+                () => _onWillPop().then((canPop) {
+                  if (canPop && mounted) context.pop();
+                }),
+          ),
           actions: [if (_hasChanges) _buildUnsavedIndicator()],
         ),
         body: SafeArea(
