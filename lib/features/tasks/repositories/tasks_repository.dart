@@ -90,11 +90,9 @@ class TasksRepository {
     final userId = _supabase.auth.currentUser!.id;
 
     try {
-      // Generate a new ID for the task if it doesn't have one
-      final taskData = task.toJson();
-      if (taskData['id'] == null) {
-        taskData['id'] = const Uuid().v4();
-      }
+      // Generate a new ID for the task
+      final taskId = const Uuid().v4();
+      final taskData = {...task.toJson(), 'id': taskId};
       taskData.remove('date'); // Remove date as it's stored at record level
 
       final existingRecord =
@@ -106,28 +104,15 @@ class TasksRepository {
               .maybeSingle();
 
       if (existingRecord != null) {
-        final existingTasks =
-            (existingRecord['data'] as List).map((t) {
-              if (t['id'] == null) {
-                t['id'] = const Uuid().v4();
-              }
-              return Task.fromJson({
-                ...t as Map<String, dynamic>,
-                'date': task.date,
-              });
-            }).toList();
-
-        final updatedTasks = [...existingTasks, task];
+        final existingTasks = List<Map<String, dynamic>>.from(
+          existingRecord['data'] as List,
+        );
+        existingTasks.add(taskData);
 
         await _supabase
             .from('tasks')
             .update({
-              'data':
-                  updatedTasks.map((t) {
-                    final json = t.toJson();
-                    json.remove('date');
-                    return json;
-                  }).toList(),
+              'data': existingTasks,
               'updated_at': DateTime.now().toIso8601String(),
             })
             .eq('user_id', userId)
@@ -137,10 +122,10 @@ class TasksRepository {
           'user_id': userId,
           'date': task.date,
           'data': [taskData],
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
         });
       }
-
-      scheduleNotifiction(task, _supabase, userId);
     } catch (e) {
       log('Error adding task: $e');
       rethrow;
@@ -160,30 +145,36 @@ class TasksRepository {
               .single();
 
       final existingTasks =
-          (record['data'] as List)
-              .map(
-                (t) => Task.fromJson({
-                  ...t as Map<String, dynamic>,
-                  'date': task.date,
-                }),
-              )
-              .toList();
-
-      final updatedTasks =
-          existingTasks.map((t) {
-            if (t.id == task.id) {
-              return task;
+          (record['data'] as List).map((t) {
+            // Ensure each task has an ID
+            if (t['id'] == null) {
+              t['id'] = const Uuid().v4();
             }
-            return t;
+            return Task.fromJson({
+              ...t as Map<String, dynamic>,
+              'date': task.date,
+            });
           }).toList();
+
+      final taskIndex = existingTasks.indexWhere(
+        (t) =>
+            t.id == task.id ||
+            (t.text == task.text &&
+                t.startTime == task.startTime &&
+                t.endTime == task.endTime),
+      );
+
+      if (taskIndex != -1) {
+        existingTasks[taskIndex] = task;
+      }
 
       await _supabase
           .from('tasks')
           .update({
             'data':
-                updatedTasks.map((t) {
+                existingTasks.map((t) {
                   final json = t.toJson();
-                  json.remove('date'); // Remove date from individual tasks
+                  json.remove('date');
                   return json;
                 }).toList(),
             'updated_at': DateTime.now().toIso8601String(),

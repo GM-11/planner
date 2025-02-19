@@ -25,6 +25,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
             onAdd: (task) async {
               try {
                 await ref.read(taskOperationsProvider).addTask(task);
+                // Invalidate the tasks providers to refresh the list
+                ref.invalidate(tasksForDateProvider);
+                ref.invalidate(sortedTasksProvider);
                 if (mounted) {
                   Navigator.pop(context);
                 }
