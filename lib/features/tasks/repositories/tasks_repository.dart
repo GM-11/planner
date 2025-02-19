@@ -126,6 +126,8 @@ class TasksRepository {
           'updated_at': DateTime.now().toIso8601String(),
         });
       }
+
+      scheduleNotification(task, _supabase, userId);
     } catch (e) {
       log('Error adding task: $e');
       rethrow;
@@ -261,7 +263,7 @@ DateTime _parseTaskTime(String date, String time) {
   return DateTime.parse(date).add(Duration(hours: hour, minutes: minute));
 }
 
-void scheduleNotifiction(
+void scheduleNotification(
   Task task,
   SupabaseClient supabase,
   String userId,
