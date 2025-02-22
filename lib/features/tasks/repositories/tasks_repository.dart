@@ -118,10 +118,13 @@ class TasksRepository {
             .eq('user_id', userId)
             .eq('date', task.date);
       } else {
+        var notifId = await scheduleNotification(task, _supabase, userId);
         await _supabase.from('tasks').insert({
           'user_id': userId,
           'date': task.date,
-          'data': [taskData],
+          'data': [
+            {...taskData, 'notification_id': notifId},
+          ],
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         });
@@ -205,6 +208,22 @@ class TasksRepository {
       // Get the current tasks array
       final tasksData = record['data'] as List;
 
+      // Find the task to delete and get its notification ID
+      String? notificationId;
+      for (var taskJson in tasksData) {
+        if (taskJson['text'] == task.text &&
+            taskJson['start_time'] == task.startTime &&
+            taskJson['end_time'] == task.endTime) {
+          notificationId = taskJson['notification_id'] as String?;
+          break;
+        }
+      }
+
+      // Cancel notification if ID exists
+      if (notificationId != null) {
+        cancelNotification(notificationId);
+      }
+
       // Filter out the task to delete
       final remainingTasks =
           tasksData.where((taskJson) {
@@ -263,7 +282,7 @@ DateTime _parseTaskTime(String date, String time) {
   return DateTime.parse(date).add(Duration(hours: hour, minutes: minute));
 }
 
-void scheduleNotification(
+Future<String> scheduleNotification(
   Task task,
   SupabaseClient supabase,
   String userId,
@@ -306,5 +325,20 @@ void scheduleNotification(
     }),
   );
 
-  log(res.body);
+  return jsonDecode(res.body)["id"];
+}
+
+void cancelNotification(String notificationId) async {
+  var uri = Uri.parse(
+    "https://api.onesignal.com/notifications/message_id?app_id=$notificationId",
+  );
+  await dotenv.load(fileName: ".env");
+  await http.delete(
+    uri,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Basic ${dotenv.env["ONE_SIGNAL_API_KEY"]!}",
+      "Accept": "application/json",
+    },
+  );
 }
